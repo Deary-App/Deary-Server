@@ -1,0 +1,94 @@
+name: Auto Label
+
+on:
+  issues:
+    types: [opened, edited]
+  pull_request_target:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v8
+        with:
+          script: |
+            const isIssue = context.eventName === 'issues';
+            const item = isIssue
+              ? context.payload.issue
+              : context.payload.pull_request;
+
+            const title = item.title.toLowerCase();
+            const author = item.user.login;
+
+            const typeLabels = {
+              feat: '✨ feat',
+              fix: '🛠️ fix',
+              refactor: '🔁 refactor',
+              chore: '📝 chore',
+              docs: '📃 docs',
+              style: '✏️ style',
+              remove: '♻️ remove',
+              test: '🧪 test',
+              rename: '📄 rename',
+              comment: '✒️ comment',
+              hotfix: '🚨 hotfix',
+              init: '🎉 init'
+            };
+
+            const authorLabels = {
+              'aneykrap': '🌵 예나',
+              'ohjinyxung': '🌻 진영'
+            };
+
+            const labels = new Set();
+
+            for (const [type, label] of Object.entries(typeLabels)) {
+              const patterns = [
+                new RegExp(`\\[${type}\\]`),
+                new RegExp(`(?:^|[^a-z0-9])${type}(?:\\([^)]*\\))?:`)
+              ];
+              if (patterns.some(pattern => pattern.test(title))) {
+                labels.add(label);
+              }
+            }
+
+            if (authorLabels[author]) {
+              labels.add(authorLabels[author]);
+            }
+
+            const managedLabels = new Set([
+              ...Object.values(typeLabels),
+              ...Object.values(authorLabels)
+            ]);
+
+            const currentLabels = (item.labels || []).map(label => label.name || label);
+            const labelsToRemove = currentLabels.filter(
+              label => managedLabels.has(label) && !labels.has(label)
+            );
+
+            await Promise.all(labelsToRemove.map(label => github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: item.number,
+              name: label
+            }).catch(error => {
+              if (error.status !== 404) {
+                throw error;
+              }
+            })));
+
+            const labelsToAdd = [...labels].filter(label => !currentLabels.includes(label));
+
+            if (labelsToAdd.length > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: item.number,
+                labels: labelsToAdd
+              });
+            }
