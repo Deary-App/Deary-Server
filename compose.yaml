@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: deary
+      POSTGRES_USER: deary
+      POSTGRES_PASSWORD: deary
+    ports:
+      - "5432:5432"
+    volumes:
+      - deary-postgres:/var/lib/postgresql/data
+
+volumes:
+  deary-postgres:

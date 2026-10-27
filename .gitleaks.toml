@@ -1,0 +1,11 @@
+title = "Deary secret scan"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Historical source manifest contains SHA-256 file checksums, not credentials"
+condition = "AND"
+paths = ['''^docs/deary-handoff/evidence/source-manifest\.json$''']
+regexTarget = "line"
+regexes = ['''^\s*"[^"\r\n]+": "[a-f0-9]{64}",?\s*$''']
