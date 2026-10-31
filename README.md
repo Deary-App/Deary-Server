@@ -11,6 +11,9 @@ Deary 앱의 API 서버다. Java 21, Spring Boot 4.1, PostgreSQL 17 기반이며
 | src/main/resources/application*.yml | 공통·local·prod 설정 |
 | compose.yaml | 로컬 PostgreSQL 17 |
 | docs/ | 제품 정책·로드맵·검증 기준 |
+| docs/conventions/ | 코드·Git·이슈·PR 컨벤션 |
+| AGENTS.md, .agents/skills/ | AI 에이전트 작업 기준과 이슈·커밋·푸시·PR 절차 |
+| .github/ | 이슈·PR 템플릿, 자동 라벨, PR 빌드 검사 |
 
 ## 로컬 실행
 
