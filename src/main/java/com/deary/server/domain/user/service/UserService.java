@@ -1,6 +1,9 @@
 package com.deary.server.domain.user.service;
 
+import com.deary.server.domain.user.entity.User;
+import com.deary.server.domain.user.exception.UserErrorCode;
 import com.deary.server.domain.user.repository.UserRepository;
+import com.deary.server.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,6 +13,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
 	private final UserRepository userRepository;
+
+	@Transactional(readOnly = true)
+	public User findUser(Long userId) {
+		return userRepository.findById(userId)
+				.orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
+	}
 
 	@Transactional
 	public void removeUser(Long userId) {
