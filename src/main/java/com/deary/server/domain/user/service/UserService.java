@@ -30,6 +30,7 @@ public class UserService {
 	public void removeUser(Long userId) {
 		userRepository.deleteUserById(userId);
 		storageClient.removeFolder(storageProperties.profileBucket(), storagePathPolicy.profileFolder(userId));
+		storageClient.removeFolder(storageProperties.diaryBucket(), storagePathPolicy.diaryFolder(userId));
 	}
 
 }
