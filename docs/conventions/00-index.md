@@ -16,3 +16,5 @@
 | [automation.md](../automation.md) | 요청별 실행 단계·중단 조건·CI와 사람의 판단 지점 | 반복 작업 자동화 설계·점검 |
 
 예: 새로운 일기 API는 `architecture.md`와 `coding-style.md`를 읽고, 새 테이블이 있으면 `persistence.md`, 새 오류 코드가 있으면 `api-response.md`를 추가로 읽는다.
+
+클라이언트 연결 방법은 [client-integration.md](../client-integration.md)에 화면별로 정리돼 있다. API를 바꾸면 이 문서도 함께 고친다.
