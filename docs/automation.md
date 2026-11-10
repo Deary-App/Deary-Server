@@ -25,8 +25,17 @@
 | `.github/workflows/auto-label.yml` | 이슈·PR 제목의 `[prefix]` 또는 `prefix:`·`prefix(Class):`로 작업 유형 라벨을, 작성자 GitHub 아이디로 팀원 라벨을 붙인다. 제목이 바뀌면 관리 대상 라벨을 다시 맞춘다. |
 | `.github/workflows/pr-check.yml` | `develop`·`deploy` 대상 PR에서 JDK 21로 `./gradlew build`를 실행한다. Testcontainers 테스트가 GitHub 러너의 Docker에서 함께 돈다. |
 | `.coderabbit.yaml` | `develop`·`deploy` 대상의 Draft가 아닌 PR을 한국어로 자동 리뷰한다. Markdown과 `docs/`는 리뷰 대상에서 제외한다. |
+| `.github/dependabot.yml` | 매주 월요일 09:00(KST)에 Gradle 의존성과 GitHub Actions 버전 업데이트 PR을 기본 브랜치(`develop`)로 연다. minor·patch는 생태계별로 한 PR에 묶고, major는 개별 PR로 연다. 보안 업데이트는 일정과 관계없이 바로 연다. |
 
 - 팀원이 추가되면 `auto-label.yml`의 `authorLabels`와 저장소 라벨을 함께 추가한다.
+
+## Dependabot PR 처리 기준
+
+- Dependabot PR 제목·커밋은 `chore(deps): ...` 형식이며 이슈 번호가 없다. 팀 PR 제목 규칙(`[prefix] #번호 - 설명`)의 예외로 두고 별도 이슈를 만들지 않는다.
+- `PR checks`의 `build`가 통과하고 변경 내역(릴리스 노트)에 호환성 문제가 없으면 머지한다. minor·patch 묶음은 빌드 통과를 기준으로, major 업데이트는 릴리스 노트의 호환성 변경을 확인한 뒤 판단한다.
+- 빌드가 실패하면 그 PR은 머지하지 않고, 코드 수정이 필요하면 `fix` 이슈를 만들어 일반 작업 흐름으로 처리한다.
+- Spring Boot처럼 여러 의존성 버전을 함께 관리하는 플러그인의 major 업데이트는 별도 이슈로 계획한 뒤 진행한다.
+- 머지 커밋은 이슈 번호가 없으므로 제목을 `[merge] <PR 제목>`(예: `[merge] chore(deps): bump ...`)으로 쓰고, 본문은 GitHub 기본값(PR 제목)을 그대로 둔다.
 - 로컬에만 있는 워크플로 파일을 실제 CI가 실행된 것으로 보고하지 않는다. 로컬 검증 결과와 CI 결과를 PR 본문에 구분해 적는다.
 - 구현·로컬 검증이 끝난 PR 제출 요청은 리뷰 가능한 상태로 만들고, 미완료 작업 공유나 사용자의 Draft 요청일 때만 Draft를 사용한다.
 - CI 실패나 리뷰 수정 요청은 PR 단계에서 자동으로 코드 수정·커밋·푸시하지 않고 다음 구현 요청으로 다룬다.
@@ -36,4 +45,4 @@
 
 - `Deary-App` org에 CodeRabbit GitHub App을 설치하고 이 저장소 접근을 허용한다.
 - `develop`·`deploy` Ruleset에 PR 필수(승인 리뷰 0명), `PR checks`의 `build` 통과 필수, 대화 해결 필수, 강제 푸시·삭제 금지를 설정하고 조직 관리자만 우회를 허용한다. 현재 설정은 [Git 규칙의 브랜치 보호](conventions/git-convention.md#브랜치-보호)에 있다.
-- 저장소 설정의 Pull Requests에서 머지 커밋 메시지를 `[merge] #<이슈번호> <PR 제목>` 형식으로 쓰도록 팀에서 맞춘다.
+- 머지할 때 머지 커밋 메시지를 [Git 규칙의 PR 항목](conventions/git-convention.md#pr) 형식으로 쓰도록 팀에서 맞춘다.

@@ -60,7 +60,8 @@
 
 - `develop`과 `deploy`로 머지할 때는 PR이 필요하다. 본문에는 변경 사항 설명을 [PR 템플릿](../../.github/PULL_REQUEST_TEMPLATE.md)에 따라 적는다.
 - 제목: `[<prefix>] #<이슈번호> - <설명>`. 예: `[feat] #1 - 약속 잡기 API 구현`, `[chore] #2 - spring data JPA 의존성 추가`.
-- 머지 커밋 메시지: `[merge] #<이슈번호> <PR 제목>`.
+- 머지 커밋 메시지: GitHub에서 **Create a merge commit**으로 머지하고, 제목은 `[merge] #<이슈번호> <설명>`으로 쓴다. 설명은 PR 제목에서 `[<prefix>] #<이슈번호> - `를 뺀 부분이다. 본문은 GitHub이 기본으로 넣는 PR 제목을 그대로 둔다.
+  - 예: PR 제목 `[feat] #2 - 공통 응답 구성` → 제목 `[merge] #2 공통 응답 구성`, 본문 `[feat] #2 - 공통 응답 구성`
 - `closes #번호`의 자동 이슈 종료는 PR 대상이 GitHub 기본 브랜치(`develop`)일 때만 동작한다.
 - `develop`·`deploy` 대상 PR은 [PR checks](../../.github/workflows/pr-check.yml)가 Java 21로 `./gradlew build`를 실행한다.
 - PR을 올린 뒤 서버 톡방에 알린다. 이 알림은 담당자가 직접 한다.
