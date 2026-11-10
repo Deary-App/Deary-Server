@@ -9,6 +9,7 @@ public record PublicProfileFindResponse(
 		Long userId,
 		String nickname,
 		String profileImagePath,
+		String profileImageUrl,
 		String nationality,
 		Language nativeLanguage,
 		Language learningLanguage,
@@ -17,11 +18,12 @@ public record PublicProfileFindResponse(
 		Gender gender
 ) {
 
-	public static PublicProfileFindResponse of(Profile profile, int age) {
+	public static PublicProfileFindResponse of(Profile profile, String profileImageUrl, int age) {
 		return new PublicProfileFindResponse(
 				profile.getUserId(),
 				profile.getNickname(),
 				profile.getProfileImagePath(),
+				profileImageUrl,
 				profile.getNationality(),
 				profile.getNativeLanguage(),
 				profile.getLearningLanguage(),
