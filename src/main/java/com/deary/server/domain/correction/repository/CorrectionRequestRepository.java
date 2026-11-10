@@ -12,4 +12,6 @@ public interface CorrectionRequestRepository extends JpaRepository<CorrectionReq
 
 	List<CorrectionRequest> findAllCorrectionRequestByDiaryIdIn(Collection<Long> diaryIds);
 
+	List<CorrectionRequest> findAllCorrectionRequestByClaimedById(Long userId);
+
 }

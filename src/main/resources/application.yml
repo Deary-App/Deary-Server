@@ -45,6 +45,9 @@ storage:
     diary-bucket: ${SUPABASE_DIARY_BUCKET:diary-images}
     download-url-expiration: ${SUPABASE_DOWNLOAD_URL_EXPIRATION:1h}
 
+correction:
+  claim-duration: ${CORRECTION_CLAIM_DURATION:30m}
+
 logging:
   pattern:
     level: "%5p [traceId=%X{traceId:-}]"

@@ -15,6 +15,7 @@ public record PublicDiaryFindResponse(
 		DiaryAuthorResponse author,
 		CorrectionProgress correctionProgress,
 		boolean mine,
-		boolean correctable
+		boolean correctable,
+		boolean correctedByMe
 ) {
 }

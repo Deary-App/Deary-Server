@@ -3,6 +3,7 @@ package com.deary.server.domain.diary.service;
 import com.deary.server.domain.correction.entity.CorrectionProgress;
 import com.deary.server.domain.correction.entity.CorrectionRequest;
 import com.deary.server.domain.correction.repository.CorrectionRequestRepository;
+import com.deary.server.domain.correction.service.CorrectionService;
 import com.deary.server.domain.diary.dto.response.DiaryAuthorResponse;
 import com.deary.server.domain.diary.dto.response.DiaryPhotoResponse;
 import com.deary.server.domain.diary.dto.response.PublicDiaryFindAllResponse;
@@ -37,6 +38,7 @@ public class PublicDiaryService {
 	private final DiaryPhotoRepository diaryPhotoRepository;
 	private final CorrectionRequestRepository correctionRequestRepository;
 	private final ProfileService profileService;
+	private final CorrectionService correctionService;
 	private final SupabaseStorageClient storageClient;
 	private final StorageProperties storageProperties;
 
@@ -76,7 +78,8 @@ public class PublicDiaryService {
 				toAuthor(author),
 				request.map(r -> r.progressAt(now)).orElse(CorrectionProgress.WAITING),
 				mine,
-				!mine && request.map(r -> r.isCorrectableBy(userId, now)).orElse(false)
+				!mine && request.map(r -> r.isCorrectableBy(userId, now)).orElse(false),
+				!mine && correctionService.hasCorrected(userId, diaryId)
 		);
 	}
 
