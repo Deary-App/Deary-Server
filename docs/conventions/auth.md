@@ -34,6 +34,20 @@
 - 만료 검증에는 Spring Security 기본 허용 오차 60초가 적용된다.
 - 서명 키 `JWT_SECRET`은 32바이트 이상이어야 하며 짧으면 앱이 시작되지 않는다. 모든 프로필에서 환경변수로만 받으며 기본값을 두지 않는다. 값이 없으면 앱이 시작되지 않는다. 테스트는 `build.gradle`의 `test` 작업이 테스트 전용 값을 넣는다.
 
+## 재발급·로그아웃·탈퇴
+
+| API | 인증 | 동작 |
+| --- | --- | --- |
+| `POST /api/v1/auth/reissue` | 없음 | `refreshToken`으로 새 토큰 쌍 발급. 사용한 토큰은 즉시 삭제하고, 없거나 만료됐거나 이미 쓴 토큰은 `AUTH_INVALID_REFRESH_TOKEN`(401) |
+| `POST /api/v1/auth/logout` | 없음 | 이 기기의 `refreshToken`만 삭제. 없는 토큰이어도 성공 |
+| `DELETE /api/v1/users/me` | 필요 | 사용자를 삭제하고 FK `on delete cascade`로 소셜 계정·리프레시 토큰을 함께 삭제. 복구 불가 |
+
+- 재발급은 조회 후 `delete` 결과 행 수로 사용 여부를 판단한다. 같은 토큰으로 동시에 요청하면 한 요청만 새 토큰을 받는다.
+- 만료된 토큰으로 재발급을 요청하면 그 토큰도 삭제한 뒤 401로 응답한다.
+- 액세스 토큰은 서버에 저장하지 않아 로그아웃·탈퇴 후에도 만료(최대 30분)까지 유효하다. 탈퇴한 사용자의 요청은 각 API에서 사용자 조회 결과로 거절한다.
+- 회원 데이터를 담는 새 테이블은 `users`를 `on delete cascade`로 참조해 탈퇴 시 함께 지워지게 한다. 스토리지 파일(사진)은 해당 기능에서 삭제 처리를 추가한다.
+- Apple 계정 연결 해지(revoke)는 App Store 출시 전 별도로 추가한다.
+
 ## 인증 사용자 식별
 
 - 검증된 토큰은 `AuthUserAuthenticationConverter`가 `AuthUser(userId)` principal로 바꾼다.
