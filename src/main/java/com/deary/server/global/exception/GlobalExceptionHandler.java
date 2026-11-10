@@ -6,6 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpMediaTypeNotAcceptableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -78,6 +80,23 @@ public class GlobalExceptionHandler {
 		return toResponse(
 				CommonErrorCode.METHOD_NOT_ALLOWED,
 				CommonErrorCode.METHOD_NOT_ALLOWED.getMessage(),
+				request
+		);
+	}
+
+	@ExceptionHandler(HttpMediaTypeNotAcceptableException.class)
+	public ResponseEntity<Void> handleMediaTypeNotAcceptable(HttpMediaTypeNotAcceptableException exception) {
+		return ResponseEntity.status(CommonErrorCode.NOT_ACCEPTABLE.getStatus()).build();
+	}
+
+	@ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+	public ResponseEntity<ErrorDto> handleMediaTypeNotSupported(
+			HttpMediaTypeNotSupportedException exception,
+			HttpServletRequest request
+	) {
+		return toResponse(
+				CommonErrorCode.UNSUPPORTED_MEDIA_TYPE,
+				CommonErrorCode.UNSUPPORTED_MEDIA_TYPE.getMessage(),
 				request
 		);
 	}
