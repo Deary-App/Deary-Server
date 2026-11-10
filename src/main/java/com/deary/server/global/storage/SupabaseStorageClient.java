@@ -2,6 +2,7 @@ package com.deary.server.global.storage;
 
 import com.deary.server.global.exception.CustomException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -56,6 +57,36 @@ public class SupabaseStorageClient {
 		return absoluteUrl(response.signedURL());
 	}
 
+	public Map<String, String> createDownloadUrls(String bucket, List<String> paths) {
+		if (paths.isEmpty() || !properties.configured()) {
+			return Map.of();
+		}
+		SignedDownloadItem[] items = call("download-urls", () -> restClient.post()
+				.uri("/object/sign/" + bucket)
+				.contentType(MediaType.APPLICATION_JSON)
+				.body(Map.of("expiresIn", properties.downloadUrlExpiration().toSeconds(), "paths", paths))
+				.retrieve()
+				.body(SignedDownloadItem[].class));
+		Map<String, String> urls = new HashMap<>();
+		for (SignedDownloadItem item : items) {
+			if (item.path() != null && item.signedURL() != null) {
+				urls.put(item.path(), absoluteUrl(item.signedURL()));
+			}
+		}
+		return urls;
+	}
+
+	public void removeFiles(String bucket, List<String> paths) {
+		if (paths.isEmpty() || !properties.configured()) {
+			return;
+		}
+		try {
+			deleteObjects(bucket, paths);
+		} catch (RestClientException exception) {
+			log.warn("Storage 파일 삭제 실패: bucket={}, reason={}", bucket, exception.getClass().getSimpleName());
+		}
+	}
+
 	public String publicUrl(String bucket, String path) {
 		if (path == null || !properties.configured()) {
 			return null;
@@ -78,15 +109,19 @@ public class SupabaseStorageClient {
 				return;
 			}
 			List<String> paths = Arrays.stream(objects).map(object -> folder + object.name()).toList();
-			restClient.method(HttpMethod.DELETE)
-					.uri("/object/" + bucket)
-					.contentType(MediaType.APPLICATION_JSON)
-					.body(Map.of("prefixes", paths))
-					.retrieve()
-					.toBodilessEntity();
+			deleteObjects(bucket, paths);
 		} catch (RestClientException exception) {
 			log.warn("Storage 파일 삭제 실패: bucket={}, reason={}", bucket, exception.getClass().getSimpleName());
 		}
+	}
+
+	private void deleteObjects(String bucket, List<String> paths) {
+		restClient.method(HttpMethod.DELETE)
+				.uri("/object/" + bucket)
+				.contentType(MediaType.APPLICATION_JSON)
+				.body(Map.of("prefixes", paths))
+				.retrieve()
+				.toBodilessEntity();
 	}
 
 	private <T> T call(String action, Supplier<T> request) {
@@ -124,6 +159,9 @@ public class SupabaseStorageClient {
 	}
 
 	private record SignedDownloadResponse(String signedURL) {
+	}
+
+	private record SignedDownloadItem(String path, String signedURL) {
 	}
 
 	private record StoredObject(String name) {

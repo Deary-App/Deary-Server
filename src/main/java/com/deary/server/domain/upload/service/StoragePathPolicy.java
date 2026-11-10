@@ -15,7 +15,22 @@ public class StoragePathPolicy {
 	}
 
 	public boolean isOwnedProfileImagePath(Long userId, String path) {
-		String folder = profileFolder(userId);
+		return isGeneratedPathIn(profileFolder(userId), path);
+	}
+
+	public String generateDiaryImagePath(Long userId) {
+		return diaryFolder(userId) + UUID.randomUUID();
+	}
+
+	public String diaryFolder(Long userId) {
+		return "diaries/" + userId + "/";
+	}
+
+	public boolean isOwnedDiaryImagePath(Long userId, String path) {
+		return isGeneratedPathIn(diaryFolder(userId), path);
+	}
+
+	private boolean isGeneratedPathIn(String folder, String path) {
 		return path.startsWith(folder)
 				&& path.length() > folder.length()
 				&& path.substring(folder.length()).matches("[0-9a-f-]{36}");

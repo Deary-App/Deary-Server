@@ -1,5 +1,7 @@
 package com.deary.server.domain.upload.controller;
 
+import com.deary.server.domain.upload.dto.request.DiaryImageUploadRequest;
+import com.deary.server.domain.upload.dto.response.DiaryImageUploadIssueResponse;
 import com.deary.server.domain.upload.dto.response.UploadUrlIssueResponse;
 import com.deary.server.domain.upload.service.UploadService;
 import com.deary.server.global.exception.dto.ErrorDto;
@@ -10,9 +12,11 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -33,6 +37,21 @@ public class UploadController {
 	@PostMapping("/profile-image")
 	public BaseResponse<UploadUrlIssueResponse> createProfileImageUpload(@AuthenticationPrincipal AuthUser authUser) {
 		return BaseResponse.ok("업로드 URL을 발급했습니다.", uploadService.generateProfileImageUploadUrl(authUser.userId()));
+	}
+
+	@Operation(summary = "일기 사진 업로드 URL 발급", description = "일기 사진 1–3장의 업로드 URL과 저장 경로를 발급한다. 업로드 후 일기 작성 시 photos[].path에 보낸다.")
+	@ApiResponse(responseCode = "200", description = "발급 성공")
+	@ApiResponse(responseCode = "400", description = "장수 오류 (COMMON_INVALID_INPUT)",
+			content = @Content(schema = @Schema(implementation = ErrorDto.class)))
+	@ApiResponse(responseCode = "503", description = "Storage 연결 실패 (STORAGE_UNAVAILABLE)",
+			content = @Content(schema = @Schema(implementation = ErrorDto.class)))
+	@PostMapping("/diary-images")
+	public BaseResponse<DiaryImageUploadIssueResponse> createDiaryImageUploads(
+			@AuthenticationPrincipal AuthUser authUser,
+			@Valid @RequestBody DiaryImageUploadRequest request
+	) {
+		return BaseResponse.ok("업로드 URL을 발급했습니다.",
+				uploadService.generateDiaryImageUploadUrls(authUser.userId(), request.count()));
 	}
 
 }
