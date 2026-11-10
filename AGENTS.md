@@ -8,7 +8,7 @@
 - `global/`에는 인증·JWT, 설정, 공통 응답·예외처럼 여러 도메인이 공유하는 코드를 둔다. 한 도메인만 쓰는 코드를 `global/`에 두지 않는다.
 - 의존 흐름은 `Controller → Service → Repository/Entity`다. Repository가 Service나 Controller를 참조하지 않는다.
 - `src/main/resources/db/migration/`이 스키마의 원본이다. `ddl-auto`는 `validate`이므로 Entity만 바꾸고 migration을 빠뜨리지 않는다.
-- `docs/`의 ACCEPTANCE·ANALYTICS·POLICIES·ROADMAP·SECURITY·VERIFICATION은 제품 정책·로드맵 문서다. 기능 규칙이 필요할 때 해당 문서만 읽는다.
+- `docs/`의 ACCEPTANCE·ANALYTICS·POLICIES·ROADMAP·SECURITY·VERIFICATION은 제품 정책·로드맵 문서다. 기능 규칙이 필요할 때 해당 문서만 읽는다. 이 문서들은 이전 Supabase 구현을 기준으로 작성됐으므로 요구사항·정책 참고용으로만 쓰고, RLS·RPC·Edge Function 같은 구현 방식은 따르지 않는다. 구현 구조는 `docs/conventions/`를 기준으로 한다.
 
 ## 작업 원칙
 
