@@ -73,6 +73,12 @@ public class ProfileService {
 	}
 
 	@Transactional(readOnly = true)
+	public Profile findProfile(Long userId) {
+		return profileRepository.findById(userId)
+				.orElseThrow(() -> new CustomException(ProfileErrorCode.PROFILE_NOT_FOUND));
+	}
+
+	@Transactional(readOnly = true)
 	public RegistrationFindResponse findRegistration(Long userId) {
 		userService.findUser(userId);
 		return new RegistrationFindResponse(
