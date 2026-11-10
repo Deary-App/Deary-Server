@@ -63,6 +63,36 @@ public class CorrectionRequest extends BaseTimeEntity {
 		return new CorrectionRequest(diary);
 	}
 
+	public void claim(User corrector, Instant expiresAt) {
+		this.status = CorrectionRequestStatus.CLAIMED;
+		this.claimedBy = corrector;
+		this.claimExpiresAt = expiresAt;
+	}
+
+	public void release() {
+		this.status = CorrectionRequestStatus.OPEN;
+		this.claimedBy = null;
+		this.claimExpiresAt = null;
+	}
+
+	public void complete(Instant now) {
+		this.status = CorrectionRequestStatus.COMPLETED;
+		this.completedAt = now;
+		this.claimedBy = null;
+		this.claimExpiresAt = null;
+	}
+
+	public void reopen() {
+		this.status = CorrectionRequestStatus.OPEN;
+		this.completedAt = null;
+		this.claimedBy = null;
+		this.claimExpiresAt = null;
+	}
+
+	public boolean isClaimedActiveBy(Long userId, Instant now) {
+		return isClaimActiveAt(now) && claimedBy.getId().equals(userId);
+	}
+
 	public CorrectionProgress progressAt(Instant now) {
 		if (status == CorrectionRequestStatus.COMPLETED) {
 			return CorrectionProgress.COMPLETED;
