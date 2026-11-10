@@ -2,6 +2,8 @@ package com.deary.server.global.exception;
 
 import com.deary.server.global.exception.dto.ErrorDto;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -57,6 +59,18 @@ public class GlobalExceptionHandler {
 		String message = exception.getAllErrors().stream()
 				.findFirst()
 				.map(error -> error.getDefaultMessage())
+				.orElse(CommonErrorCode.INVALID_INPUT.getMessage());
+		return toResponse(CommonErrorCode.INVALID_INPUT, message, request);
+	}
+
+	@ExceptionHandler(ConstraintViolationException.class)
+	public ResponseEntity<ErrorDto> handleConstraintViolation(
+			ConstraintViolationException exception,
+			HttpServletRequest request
+	) {
+		String message = exception.getConstraintViolations().stream()
+				.findFirst()
+				.map(ConstraintViolation::getMessage)
 				.orElse(CommonErrorCode.INVALID_INPUT.getMessage());
 		return toResponse(CommonErrorCode.INVALID_INPUT, message, request);
 	}
