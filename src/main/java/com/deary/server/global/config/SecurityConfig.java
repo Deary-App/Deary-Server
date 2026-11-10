@@ -36,7 +36,8 @@ public class SecurityConfig {
 						.accessDeniedHandler(customAccessDeniedHandler))
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/actuator/health", "/swagger-ui/**", "/v3/api-docs/**", "/error").permitAll()
-						.requestMatchers(HttpMethod.POST, "/api/v1/auth/apple", "/api/v1/auth/google").permitAll()
+						.requestMatchers(HttpMethod.POST, "/api/v1/auth/apple", "/api/v1/auth/google",
+								"/api/v1/auth/reissue", "/api/v1/auth/logout").permitAll()
 						.anyRequest().authenticated())
 				.build();
 	}

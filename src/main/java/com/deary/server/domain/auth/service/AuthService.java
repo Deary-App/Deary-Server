@@ -4,6 +4,9 @@ import com.deary.server.domain.auth.client.SocialIdTokenVerifier;
 import com.deary.server.domain.auth.client.SocialUserInfo;
 import com.deary.server.domain.auth.dto.request.AppleLoginRequest;
 import com.deary.server.domain.auth.dto.request.GoogleLoginRequest;
+import com.deary.server.domain.auth.dto.request.LogoutRequest;
+import com.deary.server.domain.auth.dto.request.TokenReissueRequest;
+import com.deary.server.domain.auth.dto.response.TokenIssueResponse;
 import com.deary.server.domain.auth.dto.response.SocialLoginResponse;
 import com.deary.server.domain.user.entity.SocialAccount;
 import com.deary.server.domain.user.repository.SocialAccountRepository;
@@ -27,6 +30,14 @@ public class AuthService {
 
 	public SocialLoginResponse handleGoogleLogin(GoogleLoginRequest request) {
 		return login(socialIdTokenVerifier.verifyGoogle(request.idToken()));
+	}
+
+	public TokenIssueResponse handleReissue(TokenReissueRequest request) {
+		return tokenService.handleReissue(request.refreshToken());
+	}
+
+	public void handleLogout(LogoutRequest request) {
+		tokenService.removeRefreshToken(request.refreshToken());
 	}
 
 	private SocialLoginResponse login(SocialUserInfo userInfo) {
