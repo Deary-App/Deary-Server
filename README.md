@@ -22,7 +22,7 @@ docker compose up -d
 ./gradlew bootRun
 ```
 
-기본 프로필은 `local`이며 `localhost:5432/deary`에 접속한다. 다른 DB를 쓰려면 `.env.example`의 `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`를 환경변수로 지정한다. Swagger는 `/swagger-ui/index.html`, 상태 확인은 `/actuator/health`다.
+기본 프로필은 `local`이며 `localhost:5432/deary`에 접속한다. 실행 전에 `JWT_SECRET`(32바이트 이상 임의 문자열)을 환경변수로 지정해야 하며, 없으면 앱이 시작되지 않는다. 테스트는 Gradle `test` 작업이 테스트 전용 값을 넣는다. 다른 DB를 쓰려면 `.env.example`의 `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`를 환경변수로 지정한다. Swagger는 `/swagger-ui/index.html`, 상태 확인은 `/actuator/health`다.
 
 ## 검사
 
@@ -34,4 +34,4 @@ docker compose up -d
 
 ## 운영 설정
 
-`prod` 프로필은 `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`가 필요하고 Swagger를 끈다. Supabase에 연결할 때는 Supavisor Session mode 주소를 사용한다. 스키마는 Flyway로만 변경하고 Supabase 대시보드에서 직접 수정하지 않는다. Supabase의 Data API는 끈다.
+`prod` 프로필은 `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`(32바이트 이상)이 필요하고 Swagger를 끈다. 토큰 만료는 `JWT_ACCESS_TOKEN_EXPIRATION`(기본 30m), `JWT_REFRESH_TOKEN_EXPIRATION`(기본 14d)으로 바꿀 수 있다. Supabase에 연결할 때는 Supavisor Session mode 주소를 사용한다. 스키마는 Flyway로만 변경하고 Supabase 대시보드에서 직접 수정하지 않는다. Supabase의 Data API는 끈다.
