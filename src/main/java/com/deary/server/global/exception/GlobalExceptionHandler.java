@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpMediaTypeNotAcceptableException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
@@ -26,6 +27,14 @@ public class GlobalExceptionHandler {
 		ErrorCode errorCode = exception.getErrorCode();
 		log.warn("비즈니스 예외 발생: code={}, path={}", errorCode.getCode(), request.getRequestURI());
 		return toResponse(errorCode, errorCode.getMessage(), request);
+	}
+
+	@ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+	public ResponseEntity<ErrorDto> handleOptimisticLockingFailure(
+			ObjectOptimisticLockingFailureException exception,
+			HttpServletRequest request
+	) {
+		return toResponse(CommonErrorCode.CONFLICT, CommonErrorCode.CONFLICT.getMessage(), request);
 	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
