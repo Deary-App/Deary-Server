@@ -47,4 +47,8 @@ public class RefreshToken extends BaseTimeEntity {
 		return new RefreshToken(tokenHash, expiresAt, user);
 	}
 
+	public boolean isExpired(Instant now) {
+		return !expiresAt.isAfter(now);
+	}
+
 }

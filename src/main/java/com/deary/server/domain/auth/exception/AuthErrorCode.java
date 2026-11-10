@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 public enum AuthErrorCode implements ErrorCode {
 
 	INVALID_SOCIAL_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_INVALID_SOCIAL_TOKEN", "소셜 로그인 정보를 확인할 수 없습니다."),
+	INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_INVALID_REFRESH_TOKEN", "로그인이 만료되었습니다. 다시 로그인해 주세요."),
 	SOCIAL_PROVIDER_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "AUTH_SOCIAL_PROVIDER_UNAVAILABLE", "소셜 로그인 서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.");
 
 	private final HttpStatus status;
