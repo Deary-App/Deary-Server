@@ -51,6 +51,7 @@
 | 클래스·메서드·DTO 이름, URL, Controller·Service 작성 | [coding-style.md](docs/conventions/coding-style.md) |
 | 성공 응답, 예외, 오류 응답 | [api-response.md](docs/conventions/api-response.md) |
 | 로그인·JWT·인증 사용자 식별·공개 경로 | [auth.md](docs/conventions/auth.md) |
+| 사진 업로드·Supabase Storage | [storage.md](docs/conventions/storage.md) |
 | 로그·traceId 요청 추적 | [logging.md](docs/conventions/logging.md) |
 | Entity·Repository, 테이블·컬럼 변경, Flyway | [persistence.md](docs/conventions/persistence.md) |
 | 이슈·브랜치·커밋·PR·리뷰·배포 | [git-convention.md](docs/conventions/git-convention.md) |

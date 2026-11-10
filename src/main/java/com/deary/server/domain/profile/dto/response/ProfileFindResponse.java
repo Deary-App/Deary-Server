@@ -17,10 +17,11 @@ public record ProfileFindResponse(
 		LearningLevel learningLevel,
 		Gender gender,
 		String profileImagePath,
+		String profileImageUrl,
 		Long version
 ) {
 
-	public static ProfileFindResponse of(Profile profile, String email) {
+	public static ProfileFindResponse of(Profile profile, String email, String profileImageUrl) {
 		return new ProfileFindResponse(
 				profile.getUserId(),
 				email,
@@ -32,6 +33,7 @@ public record ProfileFindResponse(
 				profile.getLearningLevel(),
 				profile.getGender(),
 				profile.getProfileImagePath(),
+				profileImageUrl,
 				profile.getVersion()
 		);
 	}

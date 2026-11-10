@@ -8,9 +8,12 @@ import com.deary.server.domain.profile.entity.Profile;
 import com.deary.server.domain.profile.exception.ProfileErrorCode;
 import com.deary.server.domain.profile.repository.ProfileRepository;
 import com.deary.server.domain.terms.service.TermsService;
+import com.deary.server.domain.upload.service.StoragePathPolicy;
 import com.deary.server.domain.user.entity.User;
 import com.deary.server.domain.user.service.UserService;
 import com.deary.server.global.exception.CustomException;
+import com.deary.server.global.storage.StorageProperties;
+import com.deary.server.global.storage.SupabaseStorageClient;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.ZoneId;
@@ -32,6 +35,9 @@ public class ProfileService {
 	private final ProfileRepository profileRepository;
 	private final UserService userService;
 	private final TermsService termsService;
+	private final StoragePathPolicy storagePathPolicy;
+	private final SupabaseStorageClient storageClient;
+	private final StorageProperties storageProperties;
 
 	@Transactional
 	public ProfileFindResponse handleProfileSave(Long userId, ProfileSaveRequest request) {
@@ -39,12 +45,12 @@ public class ProfileService {
 		if (!termsService.hasAgreedRequiredTerms(userId)) {
 			throw new CustomException(ProfileErrorCode.TERMS_NOT_AGREED);
 		}
-		validate(request);
+		validate(userId, request);
 		Profile.ProfileInfo info = toProfileInfo(request);
 		Optional<Profile> existingProfile = profileRepository.findById(userId);
 		if (existingProfile.isEmpty()) {
 			Profile profile = profileRepository.saveAndFlush(Profile.create(user, info));
-			return ProfileFindResponse.of(profile, user.getEmail());
+			return ProfileFindResponse.of(profile, user.getEmail(), profileImageUrl(profile));
 		}
 		Profile profile = existingProfile.get();
 		if (request.version() == null) {
@@ -55,7 +61,7 @@ public class ProfileService {
 		}
 		profile.modify(info);
 		profileRepository.flush();
-		return ProfileFindResponse.of(profile, user.getEmail());
+		return ProfileFindResponse.of(profile, user.getEmail(), profileImageUrl(profile));
 	}
 
 	@Transactional(readOnly = true)
@@ -63,7 +69,7 @@ public class ProfileService {
 		User user = userService.findUser(userId);
 		Profile profile = profileRepository.findById(userId)
 				.orElseThrow(() -> new CustomException(ProfileErrorCode.PROFILE_NOT_FOUND));
-		return ProfileFindResponse.of(profile, user.getEmail());
+		return ProfileFindResponse.of(profile, user.getEmail(), profileImageUrl(profile));
 	}
 
 	@Transactional(readOnly = true)
@@ -79,10 +85,14 @@ public class ProfileService {
 	public PublicProfileFindResponse findPublicProfile(Long userId) {
 		Profile profile = profileRepository.findById(userId)
 				.orElseThrow(() -> new CustomException(ProfileErrorCode.PROFILE_NOT_FOUND));
-		return PublicProfileFindResponse.of(profile, ageOf(profile.getBirthDate()));
+		return PublicProfileFindResponse.of(profile, profileImageUrl(profile), ageOf(profile.getBirthDate()));
 	}
 
-	private void validate(ProfileSaveRequest request) {
+	private void validate(Long userId, ProfileSaveRequest request) {
+		if (request.profileImagePath() != null
+				&& !storagePathPolicy.isOwnedProfileImagePath(userId, request.profileImagePath())) {
+			throw new CustomException(ProfileErrorCode.INVALID_PROFILE_IMAGE);
+		}
 		if (ageOf(request.birthDate()) < MINIMUM_AGE) {
 			throw new CustomException(ProfileErrorCode.UNDER_MINIMUM_AGE);
 		}
@@ -92,6 +102,10 @@ public class ProfileService {
 		if (!COUNTRY_CODES.contains(request.nationality())) {
 			throw new CustomException(ProfileErrorCode.INVALID_NATIONALITY);
 		}
+	}
+
+	private String profileImageUrl(Profile profile) {
+		return storageClient.publicUrl(storageProperties.profileBucket(), profile.getProfileImagePath());
 	}
 
 	private int ageOf(LocalDate birthDate) {
