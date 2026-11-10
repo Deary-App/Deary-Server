@@ -27,6 +27,16 @@ jwt:
   access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:30m}
   refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:14d}
 
+oauth:
+  apple:
+    issuer: https://appleid.apple.com
+    jwk-set-uri: https://appleid.apple.com/auth/keys
+    client-ids: ${APPLE_CLIENT_IDS:}
+  google:
+    issuers: https://accounts.google.com,accounts.google.com
+    jwk-set-uri: https://www.googleapis.com/oauth2/v3/certs
+    client-ids: ${GOOGLE_CLIENT_IDS:}
+
 logging:
   pattern:
     level: "%5p [traceId=%X{traceId:-}]"
