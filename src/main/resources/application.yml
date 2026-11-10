@@ -37,6 +37,14 @@ oauth:
     jwk-set-uri: https://www.googleapis.com/oauth2/v3/certs
     client-ids: ${GOOGLE_CLIENT_IDS:}
 
+storage:
+  supabase:
+    url: ${SUPABASE_URL:}
+    service-role-key: ${SUPABASE_SERVICE_ROLE_KEY:}
+    profile-bucket: ${SUPABASE_PROFILE_BUCKET:avatars}
+    diary-bucket: ${SUPABASE_DIARY_BUCKET:diary-images}
+    download-url-expiration: ${SUPABASE_DOWNLOAD_URL_EXPIRATION:1h}
+
 logging:
   pattern:
     level: "%5p [traceId=%X{traceId:-}]"
