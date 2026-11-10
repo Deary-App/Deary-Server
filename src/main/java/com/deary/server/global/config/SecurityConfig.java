@@ -1,5 +1,6 @@
 package com.deary.server.global.config;
 
+import com.deary.server.global.security.AuthUserAuthenticationConverter;
 import com.deary.server.global.security.CustomAccessDeniedHandler;
 import com.deary.server.global.security.CustomAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ public class SecurityConfig {
 
 	private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
 	private final CustomAccessDeniedHandler customAccessDeniedHandler;
+	private final AuthUserAuthenticationConverter authUserAuthenticationConverter;
 
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -25,6 +27,10 @@ public class SecurityConfig {
 				.formLogin(AbstractHttpConfigurer::disable)
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.exceptionHandling(exception -> exception
+						.authenticationEntryPoint(customAuthenticationEntryPoint)
+						.accessDeniedHandler(customAccessDeniedHandler))
+				.oauth2ResourceServer(oauth2 -> oauth2
+						.jwt(jwt -> jwt.jwtAuthenticationConverter(authUserAuthenticationConverter))
 						.authenticationEntryPoint(customAuthenticationEntryPoint)
 						.accessDeniedHandler(customAccessDeniedHandler))
 				.authorizeHttpRequests(auth -> auth
