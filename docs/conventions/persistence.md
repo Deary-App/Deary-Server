@@ -14,6 +14,10 @@ Entity·Repository·트랜잭션 또는 테이블·컬럼을 바꿀 때 읽는�
 - 기본 키는 `bigint` identity(`@GeneratedValue(strategy = GenerationType.IDENTITY)`)를 쓴다.
 - enum 컬럼은 `@Enumerated(EnumType.STRING)`과 `varchar`로 저장하고, migration에 허용 값 `check` 제약을 둔다.
 
+## 동시 수정
+
+- 여러 기기에서 같은 데이터를 고칠 수 있으면 `version`(`bigint not null`) 컬럼과 `@Version`으로 낙관적 잠금을 둔다. 수정 요청에는 조회한 `version`을 받아, 다르면 도메인 오류(409)로 거절한다.
+
 ## 생성·수정 시각
 
 - 테이블에는 `created_at`, `updated_at`(`timestamptz not null`)을 둔다.

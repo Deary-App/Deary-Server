@@ -49,6 +49,7 @@ public record ErrorDto(
 | `FORBIDDEN` | 403 | 권한 없음 |
 | `RESOURCE_NOT_FOUND` | 404 | 없는 경로 |
 | `METHOD_NOT_ALLOWED` | 405 | 지원하지 않는 HTTP 메서드 |
+| `CONFLICT` | 409 | 낙관적 잠금 충돌 등 동시 수정 (`ObjectOptimisticLockingFailureException`) |
 | `NOT_ACCEPTABLE` | 406 | `Accept` 헤더의 응답 형식을 만들 수 없음. 본문 없이 상태 코드만 응답 |
 | `UNSUPPORTED_MEDIA_TYPE` | 415 | 지원하지 않는 `Content-Type`으로 요청 |
 | `INTERNAL_SERVER_ERROR` | 500 | 예상하지 못한 오류 |
