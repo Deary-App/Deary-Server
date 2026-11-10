@@ -73,6 +73,13 @@ public class CorrectionRequest extends BaseTimeEntity {
 		return CorrectionProgress.WAITING;
 	}
 
+	public boolean isCorrectableBy(Long userId, Instant now) {
+		if (status == CorrectionRequestStatus.COMPLETED) {
+			return false;
+		}
+		return !isClaimActiveAt(now) || claimedBy.getId().equals(userId);
+	}
+
 	public boolean isClaimActiveAt(Instant now) {
 		return status == CorrectionRequestStatus.CLAIMED && claimExpiresAt != null && claimExpiresAt.isAfter(now);
 	}

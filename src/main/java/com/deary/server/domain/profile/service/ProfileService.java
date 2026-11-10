@@ -17,9 +17,13 @@ import com.deary.server.global.storage.SupabaseStorageClient;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.ZoneId;
+import java.util.Collection;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -79,6 +83,12 @@ public class ProfileService {
 	}
 
 	@Transactional(readOnly = true)
+	public Map<Long, Profile> findAllProfileById(Collection<Long> userIds) {
+		return profileRepository.findAllById(userIds).stream()
+				.collect(Collectors.toMap(Profile::getUserId, Function.identity()));
+	}
+
+	@Transactional(readOnly = true)
 	public RegistrationFindResponse findRegistration(Long userId) {
 		userService.findUser(userId);
 		return new RegistrationFindResponse(
@@ -110,7 +120,7 @@ public class ProfileService {
 		}
 	}
 
-	private String profileImageUrl(Profile profile) {
+	public String profileImageUrl(Profile profile) {
 		return storageClient.publicUrl(storageProperties.profileBucket(), profile.getProfileImagePath());
 	}
 
