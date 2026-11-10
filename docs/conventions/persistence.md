@@ -30,6 +30,8 @@ Entity·Repository·트랜잭션 또는 테이블·컬럼을 바꿀 때 읽는�
 - DB는 PostgreSQL 17이다. `spring.jpa.hibernate.ddl-auto`는 `validate`이므로 스키마는 `src/main/resources/db/migration/`의 Flyway 파일로만 바꾼다.
 - 파일 이름은 `V<번호>__<설명>.sql`이다. 이미 공유되거나 적용된 migration 파일은 수정·삭제하지 않고 새 버전 파일을 추가한다.
 - Supabase 대시보드에서 테이블을 직접 만들거나 고치지 않는다.
+- 약관 동의처럼 이력이 필요한 데이터는 행을 수정하지 않고 새 행을 추가하며, 현재 값은 대상별 최신 행(`max(id)`)으로 조회한다.
+- 초기 기준 데이터(약관 초안 등)는 migration의 `insert`로 넣고, 내용이 바뀌면 기존 행을 고치지 않고 새 버전 행을 추가한다.
 - 사용자 삭제처럼 함께 지워져야 하는 하위 데이터는 FK에 `on delete cascade`를 두고, 그렇지 않은 관계는 Service에서 삭제 순서를 명시한다.
 - unique·check·FK 제약과 인덱스 이름은 `uk_`·`ck_`·`idx_` + 테이블명 + 컬럼 의미로 짓는다.
 - 컬럼 삭제·타입 변경은 기존 데이터, NULL·기본값, 이전 버전 애플리케이션과의 호환성, 인덱스와 잠금 영향을 함께 검토한다.
