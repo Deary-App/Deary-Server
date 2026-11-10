@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: optional:file:.env.local[.properties]
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/deary}
     username: ${DB_USERNAME:deary}
