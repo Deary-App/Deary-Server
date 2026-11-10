@@ -22,7 +22,7 @@ docker compose up -d
 ./gradlew bootRun
 ```
 
-기본 프로필은 `local`이며 `localhost:5432/deary`에 접속한다. 실행 전에 `JWT_SECRET`(32바이트 이상 임의 문자열)을 환경변수로 지정해야 하며, 없으면 앱이 시작되지 않는다. 테스트는 Gradle `test` 작업이 테스트 전용 값을 넣는다. 다른 DB를 쓰려면 `.env.example`의 `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`를 환경변수로 지정한다. Swagger는 `/swagger-ui/index.html`, 상태 확인은 `/actuator/health`다.
+기본 프로필은 `local`이며 `localhost:5432/deary`에 접속한다. 실행 전에 `.env.example`을 복사해 `.env.local`을 만들고 값을 채운다(`cp .env.example .env.local`). `local` 프로필은 저장소 루트의 `.env.local`을 자동으로 읽으며, 이 파일은 Git에 올라가지 않는다. `JWT_SECRET`(32바이트 이상)이 없으면 앱이 시작되지 않는다. 테스트는 Gradle `test` 작업이 테스트 전용 값을 넣는다. 다른 DB를 쓰려면 `.env.example`의 `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`를 환경변수로 지정한다. Swagger는 `/swagger-ui/index.html`, 상태 확인은 `/actuator/health`다.
 
 ## 검사
 
