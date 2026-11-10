@@ -34,13 +34,14 @@ public class AuthService {
 		if (existingUserId.isPresent()) {
 			return SocialLoginResponse.of(tokenService.generateTokens(existingUserId.get()), false);
 		}
+		Long registeredUserId;
 		try {
-			Long userId = socialAccountRegistrar.register(userInfo);
-			return SocialLoginResponse.of(tokenService.generateTokens(userId), true);
+			registeredUserId = socialAccountRegistrar.register(userInfo);
 		} catch (DataIntegrityViolationException exception) {
 			Long userId = findUserId(userInfo).orElseThrow(() -> exception);
 			return SocialLoginResponse.of(tokenService.generateTokens(userId), false);
 		}
+		return SocialLoginResponse.of(tokenService.generateTokens(registeredUserId), true);
 	}
 
 	private Optional<Long> findUserId(SocialUserInfo userInfo) {
