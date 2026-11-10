@@ -2,7 +2,7 @@
 
 Deary 앱의 API 서버다. Java 21, Spring Boot 4.1, PostgreSQL 17 기반이며 DB는 Supabase PostgreSQL을 저장소로만 사용한다.
 
-이전 Supabase RPC·Edge Function 구현은 `legacy/supabase` 브랜치에 보관한다. 새 스키마 설계 시 테이블과 권한 규칙의 참고 자료로 사용한다.
+이전 Supabase RPC·Edge Function 구현은 비공개 저장소 [Deary-App/Deary-Legacy](https://github.com/Deary-App/Deary-Legacy)의 `legacy/supabase` 브랜치에 보관한다. 팀원만 열람할 수 있으며, 새 스키마 설계 시 테이블과 권한 규칙의 참고 자료로 사용한다.
 
 | 경로 | 내용 |
 |---|---|

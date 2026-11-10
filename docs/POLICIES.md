@@ -1,6 +1,6 @@
 # 제품 정책
 
-기준: 2026-10-25. 확정된 방향과 현재 구현, 후속 운영 결정을 구분한다. 코드 계약은 [API](../server/docs/API.md), 실제 권한은 [권한 안내](../server/docs/PERMISSIONS.md)를 함께 확인한다.
+기준: 2026-10-25. 확정된 방향과 현재 구현, 후속 운영 결정을 구분한다. 이전 Supabase 구현의 코드 계약은 [API](https://github.com/Deary-App/Deary-Legacy/blob/legacy/supabase/docs/API.md), 권한은 [권한 안내](https://github.com/Deary-App/Deary-Legacy/blob/legacy/supabase/docs/PERMISSIONS.md)에 있다(비공개 Deary-Legacy 저장소).
 
 | ID | 현재 기준 | 남은 결정·확인 |
 |---|---|---|
