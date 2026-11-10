@@ -14,11 +14,11 @@
 | 용도 | 버킷 (환경변수) | 경로 | 보기 URL |
 | --- | --- | --- | --- |
 | 프로필 사진 | `SUPABASE_PROFILE_BUCKET` (기본 `avatars`, 공개 버킷) | `profiles/{userId}/{UUID}` | 공개 URL |
-| 일기 사진 | `SUPABASE_DIARY_BUCKET` (기본 `diary-images`, 비공개 버킷) | 일기 기능에서 정한다 | 서명된 URL (`SUPABASE_DOWNLOAD_URL_EXPIRATION`, 기본 1시간) |
+| 일기 사진 | `SUPABASE_DIARY_BUCKET` (기본 `diary-images`, 비공개 버킷) | `diaries/{userId}/{UUID}` | 서명된 URL (`SUPABASE_DOWNLOAD_URL_EXPIRATION`, 기본 1시간). 여러 장은 한 번의 요청으로 서명한다 |
 
 - 경로는 서버가 만들고, 클라이언트가 보낸 경로는 `StoragePathPolicy`로 소유자 폴더와 형식을 확인한다. 다른 사용자 폴더나 `..`가 들어간 경로는 거절한다.
 - 파일 크기·형식 제한은 Supabase 버킷 설정(허용 MIME, 최대 크기)으로 건다.
-- 회원탈퇴 시 사용자 폴더의 파일을 삭제한다. 삭제 실패는 로그만 남기고 탈퇴는 계속 진행한다.
+- 일기를 삭제하면 그 일기의 사진 파일을 삭제하고, 회원탈퇴 시 사용자 폴더(`profiles/`, `diaries/`)의 파일을 삭제한다. 삭제 실패는 로그만 남기고 탈퇴는 계속 진행한다.
 
 ## 설정과 보안
 
