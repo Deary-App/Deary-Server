@@ -47,4 +47,5 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	environment 'JWT_SECRET', 'test-only-jwt-secret-not-for-runtime-use-0123456789'
 }
