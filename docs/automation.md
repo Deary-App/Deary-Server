@@ -35,5 +35,5 @@
 ## 사람이 설정해야 하는 것
 
 - `Deary-App` org에 CodeRabbit GitHub App을 설치하고 이 저장소 접근을 허용한다.
-- `develop`·`deploy` Ruleset에 PR 필수, `PR checks / build` 필수, 승인 리뷰, 대화 해결을 설정한다.
+- `develop`·`deploy` Ruleset에 PR 필수(승인 리뷰 0명), `PR checks`의 `build` 통과 필수, 대화 해결 필수, 강제 푸시·삭제 금지를 설정하고 조직 관리자만 우회를 허용한다. 현재 설정은 [Git 규칙의 브랜치 보호](conventions/git-convention.md#브랜치-보호)에 있다.
 - 저장소 설정의 Pull Requests에서 머지 커밋 메시지를 `[merge] #<이슈번호> <PR 제목>` 형식으로 쓰도록 팀에서 맞춘다.

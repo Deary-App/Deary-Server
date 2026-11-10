@@ -10,7 +10,7 @@
 4. 코드 리뷰를 받는다.
 5. PR을 `develop`으로 머지한다. 배포할 때는 `deploy` 브랜치에도 머지한다.
 
-- `develop`에서 직접 작업하는 것은 원칙적으로 금지한다. 단, README 작성과 GitHub 템플릿(이슈, PR) 작성은 `develop`에서 할 수 있다.
+- `develop`에서 직접 작업하는 것은 원칙적으로 금지한다. 단, README 작성과 GitHub 템플릿(이슈, PR) 작성은 `develop`에서 할 수 있다. Ruleset이 직접 푸시를 막으므로 이 예외는 Ruleset 우회 권한이 있는 조직 관리자만 쓸 수 있고, 그 외에는 PR로 올린다.
 - commit, push, merge, pull request 등 모든 작업은 오류 없이 정상적으로 실행되는지 확인한 뒤 수행한다.
 - `deploy`에는 직접 커밋·푸시하지 않는다.
 
@@ -72,6 +72,16 @@
 
 ## 브랜치 보호
 
-저장소 관리자가 GitHub Ruleset으로 `develop`과 `deploy`에 **PR 필수, `PR checks / build` 통과 필수, 승인 리뷰, 대화 해결**을 설정한다. 문서만으로는 머지를 강제할 수 없다.
+`develop`과 `deploy`에는 GitHub Ruleset `develop·deploy 보호`가 적용되어 있다.
+
+| 규칙 | 내용 |
+| --- | --- |
+| PR 필수 | 직접 푸시할 수 없고 PR로만 머지한다. 승인 리뷰는 요구하지 않는다(0명) |
+| 상태 검사 | `PR checks`의 `build`가 통과해야 머지할 수 있다 |
+| 대화 해결 | CodeRabbit 코멘트를 포함한 모든 리뷰 대화를 해결해야 머지할 수 있다 |
+| 강제 푸시·삭제 금지 | 두 브랜치의 force push와 삭제를 막는다 |
+| 우회 | 조직 관리자만 우회할 수 있다. README·GitHub 템플릿의 `develop` 직접 작업 외에는 쓰지 않는다 |
+
+승인 리뷰는 강제하지 않지만, 머지 전에 팀원이 PR을 확인하고 CodeRabbit 코멘트에 답하거나 반영한 뒤 대화를 해결한다. Ruleset을 바꾸면 이 표도 함께 고친다.
 
 실행 절차: [deary-issue](../../.agents/skills/git/deary-issue/SKILL.md) · [deary-commit](../../.agents/skills/git/deary-commit/SKILL.md) · [deary-push](../../.agents/skills/git/deary-push/SKILL.md) · [deary-pr](../../.agents/skills/git/deary-pr/SKILL.md).
