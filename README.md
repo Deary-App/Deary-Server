@@ -34,4 +34,4 @@ docker compose up -d
 
 ## 운영 설정
 
-`prod` 프로필은 `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`(32바이트 이상)이 필요하고 Swagger를 끈다. 토큰 만료는 `JWT_ACCESS_TOKEN_EXPIRATION`(기본 30m), `JWT_REFRESH_TOKEN_EXPIRATION`(기본 14d)으로 바꿀 수 있다. Supabase에 연결할 때는 Supavisor Session mode 주소를 사용한다. 스키마는 Flyway로만 변경하고 Supabase 대시보드에서 직접 수정하지 않는다. Supabase의 Data API는 끈다.
+`prod` 프로필은 `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`(32바이트 이상), `APPLE_CLIENT_IDS`, `GOOGLE_CLIENT_IDS`가 필요하고 Swagger를 끈다. 토큰 만료는 `JWT_ACCESS_TOKEN_EXPIRATION`(기본 30m), `JWT_REFRESH_TOKEN_EXPIRATION`(기본 14d)으로 바꿀 수 있다. Supabase에 연결할 때는 Supavisor Session mode 주소를 사용한다. 스키마는 Flyway로만 변경하고 Supabase 대시보드에서 직접 수정하지 않는다. Supabase의 Data API는 끈다.

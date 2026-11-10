@@ -8,6 +8,20 @@
 - 이후 인증이 필요한 요청은 `Authorization: Bearer <액세스 토큰>` 헤더로 보낸다.
 - 발급·검증은 Spring Security OAuth2 Resource Server(Nimbus)로 한다. 설정은 `global/jwt/JwtConfig`, `SecurityConfig`에 있다.
 
+## 소셜 로그인
+
+| API | 요청 | 검증 |
+| --- | --- | --- |
+| `POST /api/v1/auth/apple` | `identityToken`, `nonce`(원문) | Apple JWKS 서명, `iss`=`https://appleid.apple.com`, `aud`∈`APPLE_CLIENT_IDS`, 만료, `nonce` 클레임 = 원문의 SHA-256(hex) |
+| `POST /api/v1/auth/google` | `idToken` | Google JWKS 서명, `iss`∈`https://accounts.google.com`·`accounts.google.com`, `aud`∈`GOOGLE_CLIENT_IDS`, 만료 |
+
+- 앱은 Apple 로그인 요청에 nonce의 SHA-256(hex)을 넣고, 서버에는 원문을 보낸다.
+- 검증된 `sub`로 `social_accounts`를 찾고, 없으면 `users`·`social_accounts`를 만든다. 동시에 첫 로그인이 들어와도 `(provider, provider_user_id)` unique 제약으로 하나만 생성되고, 늦은 요청은 기존 계정으로 로그인한다.
+- 이메일은 Apple은 토큰의 `email`, Google은 `email_verified`가 `true`일 때만 저장한다.
+- 응답은 `SocialLoginResponse`(두 토큰, 각 만료 초, `newUser`)다.
+- 토큰 검증 실패는 `AUTH_INVALID_SOCIAL_TOKEN`(401), 공개키(JWKS)를 가져오지 못하면 `AUTH_SOCIAL_PROVIDER_UNAVAILABLE`(503)이다. 공개키는 라이브러리가 캐시한다.
+- `APPLE_CLIENT_IDS`(앱 Bundle ID), `GOOGLE_CLIENT_IDS`(Google OAuth 클라이언트 ID)는 쉼표로 여러 개를 넣을 수 있다. 비어 있으면 모든 소셜 토큰이 거절된다.
+
 ## 토큰
 
 | 구분 | 형식 | 만료 | 저장 |
