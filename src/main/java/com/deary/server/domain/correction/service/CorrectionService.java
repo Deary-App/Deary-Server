@@ -5,6 +5,7 @@ import com.deary.server.domain.correction.dto.response.CorrectionClaimResponse;
 import com.deary.server.domain.correction.dto.response.CorrectionCreateResponse;
 import com.deary.server.domain.correction.dto.response.CorrectionFindAllResponse;
 import com.deary.server.domain.correction.dto.response.CorrectionFindResponse;
+import com.deary.server.domain.correction.dto.response.PublicCorrectionResponse;
 import com.deary.server.domain.correction.entity.Correction;
 import com.deary.server.domain.correction.entity.CorrectionBadge;
 import com.deary.server.domain.correction.entity.CorrectionItem;
@@ -29,6 +30,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -136,25 +138,31 @@ public class CorrectionService {
 
 	@Transactional(readOnly = true)
 	public CorrectionFindResponse findCorrectionOfMyDiary(Long userId, Long diaryId) {
-		Correction correction = findCorrectionOfOwnedDiary(userId, diaryId);
-		Long correctorId = correction.getCorrector().getId();
-		Profile corrector = profileService.findAllProfileById(List.of(correctorId)).get(correctorId);
-		List<CorrectionFindResponse.Item> items = correction.getItems().stream()
-				.sorted(Comparator.comparingInt(item -> item.getSentence().getSentenceIndex()))
-				.map(this::toItem)
-				.toList();
+		CorrectionRequest request = findRequest(diaryId);
+		if (!request.getDiary().isWrittenBy(userId)) {
+			throw new CustomException(DiaryErrorCode.DIARY_NOT_FOUND);
+		}
+		Correction correction = correctionRepository.findCorrectionWithItemsByDiaryId(diaryId)
+				.orElseThrow(() -> new CustomException(CorrectionErrorCode.CORRECTION_NOT_FOUND));
 		return new CorrectionFindResponse(
 				correction.getId(),
 				diaryId,
-				new CorrectionFindResponse.Corrector(
-						correctorId,
-						corrector == null ? null : corrector.getNickname(),
-						corrector == null ? null : profileService.profileImageUrl(corrector)),
+				toCorrector(correction),
 				correction.getComment(),
 				correction.getCreatedAt(),
 				correction.getReadAt(),
-				items
+				toItems(correction)
 		);
+	}
+
+	@Transactional(readOnly = true)
+	public Optional<PublicCorrectionResponse> findPublicCorrection(Long diaryId) {
+		return correctionRepository.findCorrectionWithItemsByDiaryId(diaryId)
+				.map(correction -> new PublicCorrectionResponse(
+						toCorrector(correction),
+						correction.getComment(),
+						correction.getCreatedAt(),
+						toItems(correction)));
 	}
 
 	@Transactional
@@ -241,6 +249,22 @@ public class CorrectionService {
 		if (answered.size() != sentences.size()) {
 			throw new CustomException(CorrectionErrorCode.INCOMPLETE_ITEMS);
 		}
+	}
+
+	private CorrectionFindResponse.Corrector toCorrector(Correction correction) {
+		Long correctorId = correction.getCorrector().getId();
+		Profile corrector = profileService.findAllProfileById(List.of(correctorId)).get(correctorId);
+		return new CorrectionFindResponse.Corrector(
+				correctorId,
+				corrector == null ? null : corrector.getNickname(),
+				corrector == null ? null : profileService.profileImageUrl(corrector));
+	}
+
+	private List<CorrectionFindResponse.Item> toItems(Correction correction) {
+		return correction.getItems().stream()
+				.sorted(Comparator.comparingInt(item -> item.getSentence().getSentenceIndex()))
+				.map(this::toItem)
+				.toList();
 	}
 
 	private CorrectionFindResponse.Item toItem(CorrectionItem item) {

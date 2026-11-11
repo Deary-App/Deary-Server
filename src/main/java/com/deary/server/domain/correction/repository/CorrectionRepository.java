@@ -13,6 +13,15 @@ public interface CorrectionRepository extends JpaRepository<Correction, Long> {
 
 	Optional<Correction> findCorrectionByRequestDiaryId(Long diaryId);
 
+	@Query("""
+			select distinct c from Correction c
+			join fetch c.corrector
+			left join fetch c.items i
+			left join fetch i.sentence
+			where c.request.diary.id = :diaryId
+			""")
+	Optional<Correction> findCorrectionWithItemsByDiaryId(@Param("diaryId") Long diaryId);
+
 	boolean existsCorrectionByRequestDiaryIdAndCorrectorId(Long diaryId, Long correctorId);
 
 	@Query("""
