@@ -1,5 +1,6 @@
 package com.deary.server.domain.correction.dto.request;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -16,6 +17,7 @@ public record CorrectionSaveRequest(
 		String comment
 ) {
 
+	@Schema(name = "CorrectionSaveItem")
 	public record Item(
 			@NotNull(message = "문장 ID를 입력해 주세요.")
 			Long sentenceId,
