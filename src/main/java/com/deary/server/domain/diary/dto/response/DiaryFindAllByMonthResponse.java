@@ -1,5 +1,6 @@
 package com.deary.server.domain.diary.dto.response;
 
+import com.deary.server.domain.correction.entity.CorrectionBadge;
 import com.deary.server.domain.correction.entity.CorrectionProgress;
 import java.time.LocalDate;
 import java.util.List;
@@ -15,7 +16,8 @@ public record DiaryFindAllByMonthResponse(
 			LocalDate diaryDate,
 			String title,
 			String firstPhotoUrl,
-			CorrectionProgress correctionProgress
+			CorrectionProgress correctionProgress,
+			CorrectionBadge correctionBadge
 	) {
 	}
 
