@@ -79,7 +79,8 @@ public class PublicDiaryService {
 				request.map(r -> r.progressAt(now)).orElse(CorrectionProgress.WAITING),
 				mine,
 				!mine && request.map(r -> r.isCorrectableBy(userId, now)).orElse(false),
-				!mine && correctionService.hasCorrected(userId, diaryId)
+				!mine && correctionService.hasCorrected(userId, diaryId),
+				correctionService.findPublicCorrection(diaryId).orElse(null)
 		);
 	}
 

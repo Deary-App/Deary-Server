@@ -46,7 +46,7 @@ public class PublicDiaryController {
 		return BaseResponse.ok("공개 기록을 조회했습니다.", publicDiaryService.findAllPublicDiary(language, cursor, size));
 	}
 
-	@Operation(summary = "공개 기록 상세", description = "공개 일기의 본문·사진 전체·작성자·교정 진행 상태와 내가 지금 교정할 수 있는지를 조회한다.")
+	@Operation(summary = "공개 기록 상세", description = "공개 일기의 본문·사진 전체·작성자·교정 진행 상태와 내가 지금 교정할 수 있는지를 조회한다. 교정이 완료됐으면 correction에 문장별 교정 결과·교정자·전체 코멘트가 들어가고, 아니면 null이다. 이 조회는 작성자의 읽음 처리를 하지 않는다.")
 	@ApiResponse(responseCode = "200", description = "조회 성공")
 	@ApiResponse(responseCode = "404", description = "삭제됐거나 없는 기록 (DIARY_NOT_FOUND)",
 			content = @Content(schema = @Schema(implementation = ErrorDto.class)))

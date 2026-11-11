@@ -1,5 +1,6 @@
 package com.deary.server.domain.diary.dto.response;
 
+import com.deary.server.domain.correction.dto.response.PublicCorrectionResponse;
 import com.deary.server.domain.correction.entity.CorrectionProgress;
 import com.deary.server.domain.profile.entity.Language;
 import java.time.LocalDate;
@@ -16,6 +17,7 @@ public record PublicDiaryFindResponse(
 		CorrectionProgress correctionProgress,
 		boolean mine,
 		boolean correctable,
-		boolean correctedByMe
+		boolean correctedByMe,
+		PublicCorrectionResponse correction
 ) {
 }
