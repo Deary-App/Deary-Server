@@ -1,5 +1,7 @@
 # 분석 데이터 수집 설계
 
+> **이전 구현 기준 문서:** 이 문서는 Supabase(RLS·RPC·Edge Function) 기반 이전 구현을 기준으로 작성됐다. 서버는 Spring Boot로 전환 중이므로 제품 요구사항·정책 참고용으로만 읽고, 구현 구조와 권한 처리는 [아키텍처](conventions/architecture.md)와 현재 컨벤션을 따른다. 해당 기능을 Spring으로 옮길 때 이 문서도 함께 고친다.
+
 상태: **설계 완료 / 수집 코드·DB·대시보드·실제 데이터 없음**. 사용자는 이번 후속 답변에서 “수집 설계를 문서에 반영”을 선택했다. 앱 코드·의존성·서버·운영 설정은 바꾸지 않았다. 아래 자원/함수명·기술 한도·운영 절차는 후속 구현 제안이다.
 
 ## 1. 무엇을 판단하기 위한 수집인가
@@ -206,5 +208,5 @@ flowchart TD
 4. B4: 상호이웃, 모든 사용자 편지, 친구0·비친구1 비용, 비공개 뒤 보존을 사건과 함께 구현한다.
 5. B5: A01–A12와 V27/V29를 격리 환경에서 통과한 뒤 연구 안내에 맞춰 수집을 활성화한다. 성공 판정 수치는 본 테스트 전에 합의한다.
 
-연결: [목표 API 계약](../server/docs/API.md) · [권한](../server/docs/PERMISSIONS.md) · [정책](POLICIES.md) · [검증](VERIFICATION.md) · [개발 순서](ROADMAP.md)
+연결: [이전 API 계약](https://github.com/Deary-App/Deary-Legacy/blob/legacy/supabase/docs/API.md) · [이전 권한](https://github.com/Deary-App/Deary-Legacy/blob/legacy/supabase/docs/PERMISSIONS.md) · [정책](POLICIES.md) · [검증](VERIFICATION.md) · [개발 순서](ROADMAP.md)
 

@@ -2,7 +2,7 @@
 
 Deary 앱의 API 서버다. Java 21, Spring Boot 4.1, PostgreSQL 17 기반이며 DB는 Supabase PostgreSQL을 저장소로만 사용한다.
 
-이전 Supabase RPC·Edge Function 구현은 `legacy/supabase` 브랜치에 보관한다. 새 스키마 설계 시 테이블과 권한 규칙의 참고 자료로 사용한다.
+이전 Supabase RPC·Edge Function 구현은 비공개 저장소 [Deary-App/Deary-Legacy](https://github.com/Deary-App/Deary-Legacy)의 `legacy/supabase` 브랜치에 보관한다. 팀원만 열람할 수 있으며, 새 스키마 설계 시 테이블과 권한 규칙의 참고 자료로 사용한다.
 
 | 경로 | 내용 |
 |---|---|
@@ -11,6 +11,9 @@ Deary 앱의 API 서버다. Java 21, Spring Boot 4.1, PostgreSQL 17 기반이며
 | src/main/resources/application*.yml | 공통·local·prod 설정 |
 | compose.yaml | 로컬 PostgreSQL 17 |
 | docs/ | 제품 정책·로드맵·검증 기준 |
+| docs/conventions/ | 코드·Git·이슈·PR 컨벤션 |
+| AGENTS.md, .agents/skills/ | AI 에이전트 작업 기준과 이슈·커밋·푸시·PR 절차 |
+| .github/ | 이슈·PR 템플릿, 자동 라벨, PR 빌드 검사 |
 
 ## 로컬 실행
 
@@ -19,7 +22,7 @@ docker compose up -d
 ./gradlew bootRun
 ```
 
-기본 프로필은 `local`이며 `localhost:5432/deary`에 접속한다. 다른 DB를 쓰려면 `.env.example`의 `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`를 환경변수로 지정한다. Swagger는 `/swagger-ui/index.html`, 상태 확인은 `/actuator/health`다.
+기본 프로필은 `local`이며 `localhost:5432/deary`에 접속한다. 실행 전에 `.env.example`을 복사해 `.env.local`을 만들고 값을 채운다(`cp .env.example .env.local`). `local` 프로필은 저장소 루트의 `.env.local`을 자동으로 읽으며, 이 파일은 Git에 올라가지 않는다. `JWT_SECRET`(32바이트 이상)이 없으면 앱이 시작되지 않는다. 테스트는 Gradle `test` 작업이 테스트 전용 값을 넣는다. 다른 DB를 쓰려면 `.env.example`의 `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`를 환경변수로 지정한다. Swagger는 `/swagger-ui/index.html`, 상태 확인은 `/actuator/health`다.
 
 ## 검사
 
@@ -31,4 +34,4 @@ docker compose up -d
 
 ## 운영 설정
 
-`prod` 프로필은 `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`가 필요하고 Swagger를 끈다. Supabase에 연결할 때는 Supavisor Session mode 주소를 사용한다. 스키마는 Flyway로만 변경하고 Supabase 대시보드에서 직접 수정하지 않는다. Supabase의 Data API는 끈다.
+`prod` 프로필은 `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`(32바이트 이상), `APPLE_CLIENT_IDS`, `GOOGLE_CLIENT_IDS`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`가 필요하고 Swagger를 끈다. 토큰 만료는 `JWT_ACCESS_TOKEN_EXPIRATION`(기본 30m), `JWT_REFRESH_TOKEN_EXPIRATION`(기본 14d)으로 바꿀 수 있다. Supabase에 연결할 때는 Supavisor Session mode 주소를 사용한다. 스키마는 Flyway로만 변경하고 Supabase 대시보드에서 직접 수정하지 않는다. Supabase의 Data API는 끈다.

@@ -1,5 +1,7 @@
 # 보안 점검
 
+> **이전 구현 기준 문서:** 이 문서는 Supabase(RLS·RPC·Edge Function) 기반 이전 구현을 기준으로 작성됐다. 서버는 Spring Boot로 전환 중이므로 제품 요구사항·정책 참고용으로만 읽고, 구현 구조와 권한 처리는 [아키텍처](conventions/architecture.md)와 현재 컨벤션을 따른다. 해당 기능을 Spring으로 옮길 때 이 문서도 함께 고친다.
+
 기준: 2026-10-25. 저장소 비밀정보 점검과 서비스 보안 검증을 구분한다.
 
 ## 공유 범위
@@ -22,4 +24,4 @@
 
 ## 권한과 운영
 
-DB 권한·동시성 검사와 AI/사진 함수 검사는 [검증 현황](VERIFICATION.md)을 따른다. 접근권한 설계는 [서버 권한](../server/docs/PERMISSIONS.md)에 있다. 폴더 정리 과정에서 운영 DB 변경, 서버 배포, 유료 AI 실행은 하지 않는다.
+DB 권한·동시성 검사와 AI/사진 함수 검사는 [검증 현황](VERIFICATION.md)을 따른다. 이전 Supabase 구현의 접근권한 설계는 [서버 권한](https://github.com/Deary-App/Deary-Legacy/blob/legacy/supabase/docs/PERMISSIONS.md)(비공개 Deary-Legacy 저장소)에 있다. 폴더 정리 과정에서 운영 DB 변경, 서버 배포, 유료 AI 실행은 하지 않는다.

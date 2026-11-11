@@ -1,0 +1,50 @@
+# Deary Server Git 작업 자동화 운영
+
+`AGENTS.md`는 매 작업의 실행 순서와 권한 경계를 정하고, `docs/conventions/`는 주제별 팀 규칙을 담는다. `.agents/skills/git/`는 이슈·커밋·푸시·PR의 **별도 단계**를 맡는다. `CLAUDE.md`는 `@AGENTS.md`로 같은 안내를 가져오므로 Codex와 Claude가 같은 절차를 따른다. 새 대화에서는 현재 Git·GitHub 상태를 확인해 중단된 단계부터 이어가고, 작업과 관계없는 문서는 읽지 않는다.
+
+## 작업별 실행 경계
+
+| 단계 | 에이전트가 처리할 일 | 사람이 확인할 지점 |
+| --- | --- | --- |
+| 이슈·브랜치 준비 | 기존 항목을 재사용하고 필요할 때만 이슈 생성과 연결 브랜치 checkout | 구현으로 이어갈지 결정 |
+| 구현·검증 | 관련 코드·규칙 확인, 필요한 변경과 검증 수행 | 변경 내용과 검증 결과 확인 |
+| 커밋 계획 | 비밀정보 검사, 작은 커밋별 파일·메시지 제시 | 계획 수정, 로컬 커밋 또는 푸시 선택 |
+| 커밋 실행 | 승인 뒤 변경이 없으면 계획한 단위만 로컬 커밋 | 커밋만 요청했다면 푸시 여부 결정 |
+| 푸시 | 직전 계획이 있으면 승인된 커밋을 만든 뒤, 없으면 기존 로컬 커밋만 현재 작업 브랜치에 일반 푸시 | PR 제출 여부 결정 |
+| PR | 기존 PR 재사용 또는 `develop` 대상 PR 생성·갱신, CI 상태 확인 | 리뷰·머지 판단, 서버 톡방 알림 |
+| 배포 | `deploy` 대상 PR과 CI 상태 확인 | 운영 반영 결정과 `deploy` 머지 |
+
+각 단계는 실제 상태를 조회한 뒤 한 번만 수행한다. 기존 이슈·연결 브랜치·열린 PR이 있으면 중복 생성하지 않는다. 한 요청에 여러 단계가 포함되어도 가장 앞의 미완료 단계만 수행한다. 다만 커밋 계획을 확인한 다음 요청의 "푸시해줘"는 계획 승인·커밋·푸시를 하나의 연속 단계로 처리한다.
+
+단계별 트리거와 실행 방법은 [deary-issue](../.agents/skills/git/deary-issue/SKILL.md), [deary-commit](../.agents/skills/git/deary-commit/SKILL.md), [deary-push](../.agents/skills/git/deary-push/SKILL.md), [deary-pr](../.agents/skills/git/deary-pr/SKILL.md)를 원본으로 삼는다. 이슈·브랜치·커밋·PR의 이름과 형식은 [git-convention.md](conventions/git-convention.md)에만 정의한다.
+
+## GitHub 자동화
+
+| 파일 | 동작 |
+| --- | --- |
+| `.github/workflows/auto-label.yml` | 이슈·PR 제목의 `[prefix]` 또는 `prefix:`·`prefix(Class):`로 작업 유형 라벨을, 작성자 GitHub 아이디로 팀원 라벨을 붙인다. 제목이 바뀌면 관리 대상 라벨을 다시 맞춘다. |
+| `.github/workflows/pr-check.yml` | `develop`·`deploy` 대상 PR에서 JDK 21로 `./gradlew build`를 실행한다. Testcontainers 테스트가 GitHub 러너의 Docker에서 함께 돈다. |
+| `.github/workflows/onpod-deploy.yml` | `deploy` 브랜치에 push(머지)되면 onpod 앱 `deary-server`를 서버에서 빌드해 배포한다(`onpod app update --build`). 데이터·환경변수는 유지되고, 빌드가 실패하면 기존 버전이 계속 서비스된다. 주소는 https://deary-server.onpod.ai 다. |
+| `.coderabbit.yaml` | `develop`·`deploy` 대상의 Draft가 아닌 PR을 한국어로 자동 리뷰한다. Markdown과 `docs/`는 리뷰 대상에서 제외한다. |
+| `.github/dependabot.yml` | 매주 월요일 09:00(KST)에 Gradle 의존성과 GitHub Actions 버전 업데이트 PR을 기본 브랜치(`develop`)로 연다. minor·patch는 생태계별로 한 PR에 묶고, major는 개별 PR로 연다. 보안 업데이트는 일정과 관계없이 바로 연다. |
+
+- 팀원이 추가되면 `auto-label.yml`의 `authorLabels`와 저장소 라벨을 함께 추가한다.
+
+## Dependabot PR 처리 기준
+
+- Dependabot PR 제목·커밋은 `chore(deps): ...` 형식이며 이슈 번호가 없다. 팀 PR 제목 규칙(`[prefix] #번호 - 설명`)의 예외로 두고 별도 이슈를 만들지 않는다.
+- `PR checks`의 `build`가 통과하고 변경 내역(릴리스 노트)에 호환성 문제가 없으면 머지한다. minor·patch 묶음은 빌드 통과를 기준으로, major 업데이트는 릴리스 노트의 호환성 변경을 확인한 뒤 판단한다.
+- 빌드가 실패하면 그 PR은 머지하지 않고, 코드 수정이 필요하면 `fix` 이슈를 만들어 일반 작업 흐름으로 처리한다.
+- Spring Boot처럼 여러 의존성 버전을 함께 관리하는 플러그인의 major 업데이트는 별도 이슈로 계획한 뒤 진행한다.
+- 머지 커밋은 이슈 번호가 없으므로 제목을 `[merge] <PR 제목>`(예: `[merge] chore(deps): bump ...`)으로 쓰고, 본문은 GitHub 기본값(PR 제목)을 그대로 둔다.
+- 로컬에만 있는 워크플로 파일을 실제 CI가 실행된 것으로 보고하지 않는다. 로컬 검증 결과와 CI 결과를 PR 본문에 구분해 적는다.
+- 구현·로컬 검증이 끝난 PR 제출 요청은 리뷰 가능한 상태로 만들고, 미완료 작업 공유나 사용자의 Draft 요청일 때만 Draft를 사용한다.
+- CI 실패나 리뷰 수정 요청은 PR 단계에서 자동으로 코드 수정·커밋·푸시하지 않고 다음 구현 요청으로 다룬다.
+- 운영 배포는 `deploy` 머지를 트리거로 `onpod-deploy.yml`이 자동으로 한다. 배포 결과는 Actions 탭에서 확인하고, 문제가 생기면 `onpod app rollback deary-server`로 직전 버전으로 되돌린다. 운영 환경변수(DB·JWT·Supabase 키)는 onpod 앱에 저장돼 있고 저장소에는 두지 않는다.
+
+## 사람이 설정해야 하는 것
+
+- `Deary-App` org에 CodeRabbit GitHub App을 설치하고 이 저장소 접근을 허용한다.
+- `develop`·`deploy` Ruleset에 PR 필수(승인 리뷰 0명), `PR checks`의 `build` 통과 필수, 대화 해결 필수, 강제 푸시·삭제 금지를 설정하고 조직 관리자만 우회를 허용한다. 현재 설정은 [Git 규칙의 브랜치 보호](conventions/git-convention.md#브랜치-보호)에 있다.
+- 저장소 Secret `ONPOD_TOKEN`에 onpod CI 키(`deary-server` 앱 전용·1년 만료)를 등록한다. 키는 `onpod ci init --app deary-server --branch deploy --set-secret`으로 만들고 등록한다. 만료되면 같은 명령으로 다시 만든다.
+- 머지할 때 머지 커밋 메시지를 [Git 규칙의 PR 항목](conventions/git-convention.md#pr) 형식으로 쓰도록 팀에서 맞춘다.
