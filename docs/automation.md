@@ -24,6 +24,7 @@
 | --- | --- |
 | `.github/workflows/auto-label.yml` | 이슈·PR 제목의 `[prefix]` 또는 `prefix:`·`prefix(Class):`로 작업 유형 라벨을, 작성자 GitHub 아이디로 팀원 라벨을 붙인다. 제목이 바뀌면 관리 대상 라벨을 다시 맞춘다. |
 | `.github/workflows/pr-check.yml` | `develop`·`deploy` 대상 PR에서 JDK 21로 `./gradlew build`를 실행한다. Testcontainers 테스트가 GitHub 러너의 Docker에서 함께 돈다. |
+| `.github/workflows/onpod-deploy.yml` | `deploy` 브랜치에 push(머지)되면 onpod 앱 `deary-server`를 서버에서 빌드해 배포한다(`onpod app update --build`). 데이터·환경변수는 유지되고, 빌드가 실패하면 기존 버전이 계속 서비스된다. 주소는 https://deary-server.onpod.ai 다. |
 | `.coderabbit.yaml` | `develop`·`deploy` 대상의 Draft가 아닌 PR을 한국어로 자동 리뷰한다. Markdown과 `docs/`는 리뷰 대상에서 제외한다. |
 | `.github/dependabot.yml` | 매주 월요일 09:00(KST)에 Gradle 의존성과 GitHub Actions 버전 업데이트 PR을 기본 브랜치(`develop`)로 연다. minor·patch는 생태계별로 한 PR에 묶고, major는 개별 PR로 연다. 보안 업데이트는 일정과 관계없이 바로 연다. |
 
@@ -39,10 +40,11 @@
 - 로컬에만 있는 워크플로 파일을 실제 CI가 실행된 것으로 보고하지 않는다. 로컬 검증 결과와 CI 결과를 PR 본문에 구분해 적는다.
 - 구현·로컬 검증이 끝난 PR 제출 요청은 리뷰 가능한 상태로 만들고, 미완료 작업 공유나 사용자의 Draft 요청일 때만 Draft를 사용한다.
 - CI 실패나 리뷰 수정 요청은 PR 단계에서 자동으로 코드 수정·커밋·푸시하지 않고 다음 구현 요청으로 다룬다.
-- 운영 배포 자동화는 아직 없다. 배포 워크플로를 추가하면 `deploy` 머지를 트리거로 하고 이 문서를 갱신한다.
+- 운영 배포는 `deploy` 머지를 트리거로 `onpod-deploy.yml`이 자동으로 한다. 배포 결과는 Actions 탭에서 확인하고, 문제가 생기면 `onpod app rollback deary-server`로 직전 버전으로 되돌린다. 운영 환경변수(DB·JWT·Supabase 키)는 onpod 앱에 저장돼 있고 저장소에는 두지 않는다.
 
 ## 사람이 설정해야 하는 것
 
 - `Deary-App` org에 CodeRabbit GitHub App을 설치하고 이 저장소 접근을 허용한다.
 - `develop`·`deploy` Ruleset에 PR 필수(승인 리뷰 0명), `PR checks`의 `build` 통과 필수, 대화 해결 필수, 강제 푸시·삭제 금지를 설정하고 조직 관리자만 우회를 허용한다. 현재 설정은 [Git 규칙의 브랜치 보호](conventions/git-convention.md#브랜치-보호)에 있다.
+- 저장소 Secret `ONPOD_TOKEN`에 onpod CI 키(`deary-server` 앱 전용·1년 만료)를 등록한다. 키는 `onpod ci init --app deary-server --branch deploy --set-secret`으로 만들고 등록한다. 만료되면 같은 명령으로 다시 만든다.
 - 머지할 때 머지 커밋 메시지를 [Git 규칙의 PR 항목](conventions/git-convention.md#pr) 형식으로 쓰도록 팀에서 맞춘다.
