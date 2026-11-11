@@ -6,6 +6,7 @@ import com.deary.server.domain.correction.dto.response.CorrectionCreateResponse;
 import com.deary.server.domain.correction.dto.response.CorrectionFindAllResponse;
 import com.deary.server.domain.correction.dto.response.CorrectionFindResponse;
 import com.deary.server.domain.correction.entity.Correction;
+import com.deary.server.domain.correction.entity.CorrectionBadge;
 import com.deary.server.domain.correction.entity.CorrectionItem;
 import com.deary.server.domain.correction.entity.CorrectionRequest;
 import com.deary.server.domain.correction.entity.CorrectionRequestStatus;
@@ -22,7 +23,9 @@ import com.deary.server.domain.user.entity.User;
 import com.deary.server.domain.user.service.UserService;
 import com.deary.server.global.exception.CustomException;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -182,6 +185,19 @@ public class CorrectionService {
 	@Transactional(readOnly = true)
 	public boolean hasUnreadCorrection(Long userId) {
 		return correctionRepository.existsUnreadCorrectionByDiaryUserId(userId);
+	}
+
+	@Transactional(readOnly = true)
+	public Map<Long, CorrectionBadge> findAllCorrectionBadge(Collection<Long> diaryIds) {
+		if (diaryIds.isEmpty()) {
+			return Map.of();
+		}
+		Map<Long, CorrectionBadge> badges = new HashMap<>();
+		diaryIds.forEach(diaryId -> badges.put(diaryId, CorrectionBadge.NOT_CORRECTED));
+		correctionRepository.findAllCorrectionReadStateByDiaryIdIn(diaryIds).forEach(state -> badges.put(
+				state.getDiaryId(),
+				state.getReadAt() == null ? CorrectionBadge.UNREAD : CorrectionBadge.NONE));
+		return badges;
 	}
 
 	@Transactional(readOnly = true)
