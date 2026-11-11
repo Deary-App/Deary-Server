@@ -1,5 +1,6 @@
 package com.deary.server.domain.correction.dto.response;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.List;
 
@@ -20,6 +21,7 @@ public record CorrectionFindResponse(
 	) {
 	}
 
+	@Schema(name = "CorrectionResultItem")
 	public record Item(
 			Long sentenceId,
 			int sentenceIndex,
