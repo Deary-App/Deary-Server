@@ -60,7 +60,7 @@ public class DiaryController {
 		return BaseResponse.ok("오늘 기록 여부를 조회했습니다.", diaryService.findTodayDiary(authUser.userId()));
 	}
 
-	@Operation(summary = "월별 내 기록", description = "그 달의 내 기록을 날짜순으로 조회한다. 첫 사진 URL과 교정 진행 상태를 포함한다.")
+	@Operation(summary = "월별 내 기록", description = "그 달의 내 기록을 날짜순으로 조회한다. 첫 사진 URL, 교정 진행 상태와 별 표시 상태(correctionBadge: NOT_CORRECTED 회색 별, UNREAD 빨간 별, NONE 별 없음)를 포함한다.")
 	@ApiResponse(responseCode = "200", description = "조회 성공")
 	@ApiResponse(responseCode = "400", description = "잘못된 연도·월 (DIARY_INVALID_MONTH, COMMON_INVALID_INPUT)",
 			content = @Content(schema = @Schema(implementation = ErrorDto.class)))
@@ -73,7 +73,7 @@ public class DiaryController {
 		return BaseResponse.ok("기록을 조회했습니다.", diaryService.findAllDiaryByMonth(authUser.userId(), year, month));
 	}
 
-	@Operation(summary = "내 기록 상세", description = "내 기록의 날짜·제목·본문·사진(배치 포함)과 교정 진행 상태를 조회한다.")
+	@Operation(summary = "내 기록 상세", description = "내 기록의 날짜·제목·본문·사진(배치 포함), 교정 진행 상태와 별 표시 상태(correctionBadge)를 조회한다.")
 	@ApiResponse(responseCode = "200", description = "조회 성공")
 	@ApiResponse(responseCode = "404", description = "없거나 내 기록이 아님 (DIARY_NOT_FOUND)",
 			content = @Content(schema = @Schema(implementation = ErrorDto.class)))

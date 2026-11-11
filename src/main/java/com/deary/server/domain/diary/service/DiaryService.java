@@ -1,8 +1,10 @@
 package com.deary.server.domain.diary.service;
 
+import com.deary.server.domain.correction.entity.CorrectionBadge;
 import com.deary.server.domain.correction.entity.CorrectionProgress;
 import com.deary.server.domain.correction.entity.CorrectionRequest;
 import com.deary.server.domain.correction.repository.CorrectionRequestRepository;
+import com.deary.server.domain.correction.service.CorrectionService;
 import com.deary.server.domain.diary.dto.request.DiarySaveRequest;
 import com.deary.server.domain.diary.dto.response.DiaryCreateResponse;
 import com.deary.server.domain.diary.dto.response.DiaryFindAllByMonthResponse;
@@ -47,6 +49,7 @@ public class DiaryService {
 	private final DiaryRepository diaryRepository;
 	private final DiaryPhotoRepository diaryPhotoRepository;
 	private final CorrectionRequestRepository correctionRequestRepository;
+	private final CorrectionService correctionService;
 	private final UserService userService;
 	private final ProfileService profileService;
 	private final SentenceSplitter sentenceSplitter;
@@ -104,7 +107,8 @@ public class DiaryService {
 				diary.getContent(),
 				diary.getLanguage(),
 				photos,
-				progressOf(diary.getId())
+				progressOf(diary.getId()),
+				correctionService.findAllCorrectionBadge(List.of(diary.getId())).get(diary.getId())
 		);
 	}
 
@@ -130,6 +134,7 @@ public class DiaryService {
 				: correctionRequestRepository.findAllCorrectionRequestByDiaryIdIn(diaryIds).stream()
 						.collect(Collectors.toMap(request -> request.getDiary().getId(), Function.identity()));
 		Map<String, String> urls = signedUrls(List.copyOf(firstPhotoPaths.values()));
+		Map<Long, CorrectionBadge> badges = correctionService.findAllCorrectionBadge(diaryIds);
 		Instant now = Instant.now();
 		List<DiaryFindAllByMonthResponse.DiarySummary> summaries = diaries.stream()
 				.map(diary -> new DiaryFindAllByMonthResponse.DiarySummary(
@@ -139,7 +144,8 @@ public class DiaryService {
 						urls.get(firstPhotoPaths.get(diary.getId())),
 						requests.containsKey(diary.getId())
 								? requests.get(diary.getId()).progressAt(now)
-								: CorrectionProgress.WAITING))
+								: CorrectionProgress.WAITING,
+						badges.get(diary.getId())))
 				.toList();
 		return new DiaryFindAllByMonthResponse(year, month, summaries);
 	}
