@@ -23,9 +23,13 @@ public class AuthService {
 	private final SocialAccountRepository socialAccountRepository;
 	private final SocialAccountRegistrar socialAccountRegistrar;
 	private final TokenService tokenService;
+	private final AppleTokenService appleTokenService;
 
 	public SocialLoginResponse handleAppleLogin(AppleLoginRequest request) {
-		return login(socialIdTokenVerifier.verifyApple(request.identityToken(), request.nonce()));
+		SocialUserInfo userInfo = socialIdTokenVerifier.verifyApple(request.identityToken(), request.nonce());
+		SocialLoginResponse response = login(userInfo);
+		appleTokenService.registerAppleToken(userInfo, request.authorizationCode());
+		return response;
 	}
 
 	public SocialLoginResponse handleGoogleLogin(GoogleLoginRequest request) {

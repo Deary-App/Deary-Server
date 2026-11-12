@@ -10,6 +10,7 @@ import com.deary.server.domain.report.dto.request.ReportSaveRequest;
 import com.deary.server.domain.report.dto.response.ReportCreateResponse;
 import com.deary.server.domain.report.entity.Report;
 import com.deary.server.domain.report.entity.ReportTargetType;
+import com.deary.server.domain.report.event.ReportRegisteredEvent;
 import com.deary.server.domain.report.exception.ReportErrorCode;
 import com.deary.server.domain.report.repository.ReportRepository;
 import com.deary.server.domain.user.entity.User;
@@ -19,6 +20,7 @@ import com.deary.server.global.exception.CustomException;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +34,7 @@ public class ReportService {
 	private final CorrectionRepository correctionRepository;
 	private final UserService userService;
 	private final ProfileService profileService;
+	private final ApplicationEventPublisher eventPublisher;
 
 	@Transactional
 	public ReportCreateResponse registerReport(Long userId, ReportSaveRequest request) {
@@ -53,6 +56,8 @@ public class ReportService {
 		} catch (DataIntegrityViolationException exception) {
 			throw new CustomException(CommonErrorCode.CONFLICT);
 		}
+		eventPublisher.publishEvent(new ReportRegisteredEvent(report.getId(), report.getTargetType(),
+				report.getTargetId(), report.getReason(), report.getCreatedAt()));
 		return new ReportCreateResponse(report.getId());
 	}
 

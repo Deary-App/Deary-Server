@@ -45,6 +45,12 @@ public class SocialAccount extends BaseTimeEntity {
 	@JoinColumn(name = "user_id", nullable = false)
 	private User user;
 
+	@Column(name = "apple_refresh_token")
+	private String appleRefreshToken;
+
+	@Column(name = "apple_client_id")
+	private String appleClientId;
+
 	private SocialAccount(SocialProvider provider, String providerUserId, User user) {
 		this.provider = provider;
 		this.providerUserId = providerUserId;

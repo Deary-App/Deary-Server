@@ -32,6 +32,11 @@ oauth:
     issuer: https://appleid.apple.com
     jwk-set-uri: https://appleid.apple.com/auth/keys
     client-ids: ${APPLE_CLIENT_IDS:}
+    token-uri: https://appleid.apple.com/auth/token
+    revoke-uri: https://appleid.apple.com/auth/revoke
+    team-id: ${APPLE_TEAM_ID:}
+    key-id: ${APPLE_KEY_ID:}
+    private-key: ${APPLE_PRIVATE_KEY:}
   google:
     issuers: https://accounts.google.com,accounts.google.com
     jwk-set-uri: https://www.googleapis.com/oauth2/v3/certs
@@ -47,6 +52,10 @@ storage:
 
 correction:
   claim-duration: ${CORRECTION_CLAIM_DURATION:30m}
+
+report:
+  notification:
+    webhook-url: ${REPORT_WEBHOOK_URL:}
 
 logging:
   pattern:
