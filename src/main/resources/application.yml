@@ -48,6 +48,10 @@ storage:
 correction:
   claim-duration: ${CORRECTION_CLAIM_DURATION:30m}
 
+report:
+  notification:
+    webhook-url: ${REPORT_WEBHOOK_URL:}
+
 logging:
   pattern:
     level: "%5p [traceId=%X{traceId:-}]"
