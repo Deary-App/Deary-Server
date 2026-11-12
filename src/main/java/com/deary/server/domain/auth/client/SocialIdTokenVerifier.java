@@ -63,7 +63,7 @@ public class SocialIdTokenVerifier {
 		if (subject == null || subject.isBlank()) {
 			throw new CustomException(AuthErrorCode.INVALID_SOCIAL_TOKEN);
 		}
-		return new SocialUserInfo(provider, subject, verifiedEmail(provider, jwt));
+		return new SocialUserInfo(provider, subject, verifiedEmail(provider, jwt), firstAudience(jwt));
 	}
 
 	private String verifiedEmail(SocialProvider provider, Jwt jwt) {
@@ -71,6 +71,11 @@ public class SocialIdTokenVerifier {
 			return null;
 		}
 		return jwt.getClaimAsString("email");
+	}
+
+	private String firstAudience(Jwt jwt) {
+		List<String> audiences = jwt.getAudience();
+		return audiences == null || audiences.isEmpty() ? null : audiences.getFirst();
 	}
 
 	private String sha256Hex(String value) {

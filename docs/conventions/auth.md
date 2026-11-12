@@ -12,7 +12,7 @@
 
 | API | 요청 | 검증 |
 | --- | --- | --- |
-| `POST /api/v1/auth/apple` | `identityToken`, `nonce`(원문) | Apple JWKS 서명, `iss`=`https://appleid.apple.com`, `aud`∈`APPLE_CLIENT_IDS`, 만료, `nonce` 클레임 = 원문의 SHA-256(hex) |
+| `POST /api/v1/auth/apple` | `identityToken`, `nonce`(원문), 선택 `authorizationCode` | Apple JWKS 서명, `iss`=`https://appleid.apple.com`, `aud`∈`APPLE_CLIENT_IDS`, 만료, `nonce` 클레임 = 원문의 SHA-256(hex) |
 | `POST /api/v1/auth/google` | `idToken` | Google JWKS 서명, `iss`∈`https://accounts.google.com`·`accounts.google.com`, `aud`∈`GOOGLE_CLIENT_IDS`, 만료 |
 
 - 앱은 Apple 로그인 요청에 nonce의 SHA-256(hex)을 넣고, 서버에는 원문을 보낸다.
@@ -46,7 +46,16 @@
 - 만료된 토큰으로 재발급을 요청하면 그 토큰도 삭제한 뒤 401로 응답한다.
 - 액세스 토큰은 서버에 저장하지 않아 로그아웃·탈퇴 후에도 만료(최대 30분)까지 유효하다. 탈퇴한 사용자의 요청은 각 API에서 사용자 조회 결과로 거절한다.
 - 회원 데이터를 담는 새 테이블은 `users`를 `on delete cascade`로 참조해 탈퇴 시 함께 지워지게 한다. 스토리지 파일(사진)은 해당 기능에서 삭제 처리를 추가한다.
-- Apple 계정 연결 해지(revoke)는 App Store 출시 전 별도로 추가한다.
+
+## Apple 계정 연결 해지
+
+App Store 가이드라인 5.1.1(v)에 따라 탈퇴할 때 Sign in with Apple 연결을 해지한다.
+
+- 로그인 요청에 `authorizationCode`가 있으면 서버가 `https://appleid.apple.com/auth/token`으로 교환해 refresh token을 받는다. `client_id`는 identity token의 `aud`(Bundle ID), `client_secret`은 `.p8` 키로 서명한 ES256 JWT(5분 유효)다.
+- refresh token은 `social_accounts.apple_refresh_token`에 AES-256-GCM으로 암호화해 저장하고, 교환에 쓴 `client_id`를 `apple_client_id`에 함께 저장한다. 암호화 키는 `JWT_SECRET`에서 파생하므로 `JWT_SECRET`을 바꾸면 기존 값은 복호화되지 않아 해지가 건너뛰어진다. 토큰 원문은 응답·로그에 남기지 않는다.
+- 탈퇴 시 사용자 삭제 전에 저장된 토큰을 읽고, 트랜잭션 커밋 후 `https://appleid.apple.com/auth/revoke`로 해지한다.
+- 교환·해지 실패, 설정 누락, 저장된 토큰 없음은 경고 로그만 남기고 로그인·탈퇴는 성공시킨다.
+- 설정: `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`(`.p8` 내용, 줄바꿈은 `\n`으로 넣어도 된다). 하나라도 비면 교환·해지를 건너뛴다.
 
 ## 인증 사용자 식별
 
