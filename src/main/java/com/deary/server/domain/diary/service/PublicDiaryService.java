@@ -1,5 +1,7 @@
 package com.deary.server.domain.diary.service;
 
+import com.deary.server.domain.block.service.BlockService;
+import com.deary.server.domain.correction.dto.response.PublicCorrectionResponse;
 import com.deary.server.domain.correction.entity.CorrectionProgress;
 import com.deary.server.domain.correction.entity.CorrectionRequest;
 import com.deary.server.domain.correction.repository.CorrectionRequestRepository;
@@ -15,7 +17,10 @@ import com.deary.server.domain.diary.repository.DiaryPhotoRepository;
 import com.deary.server.domain.diary.repository.DiaryRepository;
 import com.deary.server.domain.profile.entity.Language;
 import com.deary.server.domain.profile.entity.Profile;
+import com.deary.server.domain.profile.exception.ProfileErrorCode;
 import com.deary.server.domain.profile.service.ProfileService;
+import com.deary.server.domain.report.entity.ReportTargetType;
+import com.deary.server.domain.report.service.ReportService;
 import com.deary.server.global.exception.CustomException;
 import com.deary.server.global.storage.StorageProperties;
 import com.deary.server.global.storage.SupabaseStorageClient;
@@ -39,19 +44,24 @@ public class PublicDiaryService {
 	private final CorrectionRequestRepository correctionRequestRepository;
 	private final ProfileService profileService;
 	private final CorrectionService correctionService;
+	private final BlockService blockService;
+	private final ReportService reportService;
 	private final SupabaseStorageClient storageClient;
 	private final StorageProperties storageProperties;
 
 	@Transactional(readOnly = true)
-	public PublicDiaryFindAllResponse findAllPublicDiary(Language language, Long cursor, int size) {
-		List<Diary> diaries = diaryRepository.findAllPublicDiary(language, cursor, Limit.of(size + 1));
+	public PublicDiaryFindAllResponse findAllPublicDiary(Long userId, Language language, Long cursor, int size) {
+		List<Diary> diaries = diaryRepository.findAllPublicDiary(userId, language, cursor, Limit.of(size + 1));
 		return toPage(diaries, size);
 	}
 
 	@Transactional(readOnly = true)
-	public PublicDiaryFindAllResponse findAllPublicDiaryByUser(Long authorId, Long cursor, int size) {
+	public PublicDiaryFindAllResponse findAllPublicDiaryByUser(Long userId, Long authorId, Long cursor, int size) {
 		profileService.findProfile(authorId);
-		List<Diary> diaries = diaryRepository.findAllPublicDiaryByUserId(authorId, cursor, Limit.of(size + 1));
+		if (blockService.isBlockedBetween(userId, authorId)) {
+			throw new CustomException(ProfileErrorCode.PROFILE_NOT_FOUND);
+		}
+		List<Diary> diaries = diaryRepository.findAllPublicDiaryByUserId(userId, authorId, cursor, Limit.of(size + 1));
 		return toPage(diaries, size);
 	}
 
@@ -60,6 +70,10 @@ public class PublicDiaryService {
 		Diary diary = diaryRepository.findById(diaryId)
 				.orElseThrow(() -> new CustomException(DiaryErrorCode.DIARY_NOT_FOUND));
 		Long authorId = diary.getUser().getId();
+		if (blockService.isBlockedBetween(userId, authorId)
+				|| reportService.hasReported(userId, ReportTargetType.DIARY, diaryId)) {
+			throw new CustomException(DiaryErrorCode.DIARY_NOT_FOUND);
+		}
 		Profile author = profileService.findAllProfileById(List.of(authorId)).get(authorId);
 		Map<String, String> urls = signedUrls(diary.getPhotos().stream().map(DiaryPhoto::getStoragePath).toList());
 		List<DiaryPhotoResponse> photos = diary.getPhotos().stream()
@@ -80,7 +94,9 @@ public class PublicDiaryService {
 				mine,
 				!mine && request.map(r -> r.isCorrectableBy(userId, now)).orElse(false),
 				!mine && correctionService.hasCorrected(userId, diaryId),
-				correctionService.findPublicCorrection(diaryId).orElse(null)
+				correctionService.findPublicCorrection(userId, diaryId, mine)
+						.filter(correction -> isVisibleCorrection(userId, correction))
+						.orElse(null)
 		);
 	}
 
@@ -114,6 +130,11 @@ public class PublicDiaryService {
 								: CorrectionProgress.WAITING))
 				.toList();
 		return new PublicDiaryFindAllResponse(cards, hasNext ? diaries.getLast().getId() : null);
+	}
+
+	private boolean isVisibleCorrection(Long userId, PublicCorrectionResponse correction) {
+		return !blockService.isBlockedBetween(userId, correction.corrector().userId())
+				&& !reportService.hasReported(userId, ReportTargetType.CORRECTION, correction.correctionId());
 	}
 
 	private DiaryAuthorResponse toAuthor(Profile profile) {
