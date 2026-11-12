@@ -1,5 +1,6 @@
 package com.deary.server.domain.correction.service;
 
+import com.deary.server.domain.block.service.BlockService;
 import com.deary.server.domain.correction.dto.request.CorrectionSaveRequest;
 import com.deary.server.domain.correction.dto.response.CorrectionClaimResponse;
 import com.deary.server.domain.correction.dto.response.CorrectionCreateResponse;
@@ -20,6 +21,8 @@ import com.deary.server.domain.diary.entity.DiarySentence;
 import com.deary.server.domain.diary.exception.DiaryErrorCode;
 import com.deary.server.domain.profile.entity.Profile;
 import com.deary.server.domain.profile.service.ProfileService;
+import com.deary.server.domain.report.entity.ReportTargetType;
+import com.deary.server.domain.report.service.ReportService;
 import com.deary.server.domain.user.entity.User;
 import com.deary.server.domain.user.service.UserService;
 import com.deary.server.global.exception.CustomException;
@@ -54,6 +57,8 @@ public class CorrectionService {
 	private final UserService userService;
 	private final ProfileService profileService;
 	private final CorrectionProperties correctionProperties;
+	private final BlockService blockService;
+	private final ReportService reportService;
 
 	@Transactional
 	public CorrectionClaimResponse handleClaim(Long userId, Long diaryId) {
@@ -61,6 +66,7 @@ public class CorrectionService {
 		profileService.findProfile(userId);
 		CorrectionRequest request = findRequest(diaryId);
 		Diary diary = request.getDiary();
+		validateVisible(userId, diary);
 		if (diary.isWrittenBy(userId)) {
 			throw new CustomException(CorrectionErrorCode.OWN_DIARY);
 		}
@@ -102,6 +108,7 @@ public class CorrectionService {
 	public CorrectionCreateResponse generateCorrection(Long userId, Long diaryId, CorrectionSaveRequest saveRequest) {
 		User corrector = userService.findUser(userId);
 		CorrectionRequest request = findRequest(diaryId);
+		validateVisible(userId, request.getDiary());
 		Instant now = Instant.now();
 		if (request.getStatus() == CorrectionRequestStatus.COMPLETED) {
 			throw new CustomException(CorrectionErrorCode.ALREADY_COMPLETED);
@@ -159,6 +166,7 @@ public class CorrectionService {
 	public Optional<PublicCorrectionResponse> findPublicCorrection(Long diaryId) {
 		return correctionRepository.findCorrectionWithItemsByDiaryId(diaryId)
 				.map(correction -> new PublicCorrectionResponse(
+						correction.getId(),
 						toCorrector(correction),
 						correction.getComment(),
 						correction.getCreatedAt(),
@@ -225,6 +233,13 @@ public class CorrectionService {
 	private CorrectionRequest findRequest(Long diaryId) {
 		return correctionRequestRepository.findCorrectionRequestByDiaryId(diaryId)
 				.orElseThrow(() -> new CustomException(DiaryErrorCode.DIARY_NOT_FOUND));
+	}
+
+	private void validateVisible(Long userId, Diary diary) {
+		if (blockService.isBlockedBetween(userId, diary.getUser().getId())
+				|| reportService.hasReported(userId, ReportTargetType.DIARY, diary.getId())) {
+			throw new CustomException(DiaryErrorCode.DIARY_NOT_FOUND);
+		}
 	}
 
 	private Correction findCorrectionOfOwnedDiary(Long userId, Long diaryId) {

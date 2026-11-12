@@ -65,13 +65,16 @@ public class ProfileController {
 		return BaseResponse.ok("가입 진행 상태를 조회했습니다.", profileService.findRegistration(authUser.userId()));
 	}
 
-	@Operation(summary = "사용자 프로필", description = "다른 사용자의 공개 프로필을 조회한다. 생년월일 원본과 이메일은 내보내지 않고, 성별은 공개한 경우에만 보여준다.")
+	@Operation(summary = "사용자 프로필", description = "다른 사용자의 공개 프로필을 조회한다. 생년월일 원본과 이메일은 내보내지 않고, 성별은 공개한 경우에만 보여준다. 차단 관계(양방향)인 사용자는 없는 사용자와 같이 응답한다.")
 	@ApiResponse(responseCode = "200", description = "조회 성공")
-	@ApiResponse(responseCode = "404", description = "없는 사용자 (PROFILE_NOT_FOUND)",
+	@ApiResponse(responseCode = "404", description = "없거나 차단 관계인 사용자 (PROFILE_NOT_FOUND)",
 			content = @Content(schema = @Schema(implementation = ErrorDto.class)))
 	@GetMapping("/{userId}/profile")
-	public BaseResponse<PublicProfileFindResponse> readProfile(@PathVariable Long userId) {
-		return BaseResponse.ok("프로필을 조회했습니다.", profileService.findPublicProfile(userId));
+	public BaseResponse<PublicProfileFindResponse> readProfile(
+			@AuthenticationPrincipal AuthUser authUser,
+			@PathVariable Long userId
+	) {
+		return BaseResponse.ok("프로필을 조회했습니다.", profileService.findPublicProfile(authUser.userId(), userId));
 	}
 
 }

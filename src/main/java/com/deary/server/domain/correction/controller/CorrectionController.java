@@ -44,7 +44,7 @@ public class CorrectionController {
 	@ApiResponse(responseCode = "200", description = "맡기 성공")
 	@ApiResponse(responseCode = "403", description = "내 기록 (CORRECTION_OWN_DIARY)",
 			content = @Content(schema = @Schema(implementation = ErrorDto.class)))
-	@ApiResponse(responseCode = "404", description = "없는 기록 (DIARY_NOT_FOUND), 회원가입 정보 없음 (PROFILE_NOT_FOUND)",
+	@ApiResponse(responseCode = "404", description = "없는 기록, 차단 관계이거나 내가 신고한 기록 (DIARY_NOT_FOUND), 회원가입 정보 없음 (PROFILE_NOT_FOUND)",
 			content = @Content(schema = @Schema(implementation = ErrorDto.class)))
 	@ApiResponse(responseCode = "409", description = "다른 사람이 맡음 (CORRECTION_ALREADY_CLAIMED), 이미 완료 (CORRECTION_ALREADY_COMPLETED)",
 			content = @Content(schema = @Schema(implementation = ErrorDto.class)))
@@ -72,6 +72,8 @@ public class CorrectionController {
 	@Operation(summary = "교정 제출", description = "맡은 교정을 제출한다. 모든 문장에 응답(changed=true면 correctedContent 필수)하고 전체 코멘트를 남겨야 한다.")
 	@ApiResponse(responseCode = "201", description = "제출 성공")
 	@ApiResponse(responseCode = "400", description = "입력 오류 (COMMON_INVALID_INPUT), 문장 누락·중복 (CORRECTION_INCOMPLETE_ITEMS), 고친 문장 누락 (CORRECTION_INVALID_ITEM)",
+			content = @Content(schema = @Schema(implementation = ErrorDto.class)))
+	@ApiResponse(responseCode = "404", description = "없는 기록, 차단 관계이거나 내가 신고한 기록 (DIARY_NOT_FOUND)",
 			content = @Content(schema = @Schema(implementation = ErrorDto.class)))
 	@ApiResponse(responseCode = "409", description = "맡은 시간이 지났거나 맡지 않음 (CORRECTION_CLAIM_NOT_ACTIVE), 이미 완료 (CORRECTION_ALREADY_COMPLETED)",
 			content = @Content(schema = @Schema(implementation = ErrorDto.class)))
