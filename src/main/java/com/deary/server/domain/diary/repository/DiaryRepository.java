@@ -20,16 +20,38 @@ public interface DiaryRepository extends JpaRepository<Diary, Long> {
 			select d from Diary d
 			where (:language is null or d.language = :language)
 			and (:cursor is null or d.id < :cursor)
+			and not exists (
+				select b.id from UserBlock b
+				where b.blocker.id = :viewerId and b.blocked.id = d.user.id
+			)
+			and not exists (
+				select b.id from UserBlock b
+				where b.blocker.id = d.user.id and b.blocked.id = :viewerId
+			)
+			and not exists (
+				select r.id from Report r
+				where r.reporter.id = :viewerId
+				and r.targetType = com.deary.server.domain.report.entity.ReportTargetType.DIARY
+				and r.targetId = d.id
+			)
 			order by d.id desc
 			""")
-	List<Diary> findAllPublicDiary(@Param("language") Language language, @Param("cursor") Long cursor, Limit limit);
+	List<Diary> findAllPublicDiary(@Param("viewerId") Long viewerId, @Param("language") Language language,
+			@Param("cursor") Long cursor, Limit limit);
 
 	@Query("""
 			select d from Diary d
 			where d.user.id = :userId
 			and (:cursor is null or d.id < :cursor)
+			and not exists (
+				select r.id from Report r
+				where r.reporter.id = :viewerId
+				and r.targetType = com.deary.server.domain.report.entity.ReportTargetType.DIARY
+				and r.targetId = d.id
+			)
 			order by d.id desc
 			""")
-	List<Diary> findAllPublicDiaryByUserId(@Param("userId") Long userId, @Param("cursor") Long cursor, Limit limit);
+	List<Diary> findAllPublicDiaryByUserId(@Param("viewerId") Long viewerId, @Param("userId") Long userId,
+			@Param("cursor") Long cursor, Limit limit);
 
 }
