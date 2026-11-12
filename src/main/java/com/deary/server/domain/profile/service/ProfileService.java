@@ -1,5 +1,6 @@
 package com.deary.server.domain.profile.service;
 
+import com.deary.server.domain.block.repository.UserBlockRepository;
 import com.deary.server.domain.profile.dto.request.ProfileSaveRequest;
 import com.deary.server.domain.profile.dto.response.ProfileFindResponse;
 import com.deary.server.domain.profile.dto.response.PublicProfileFindResponse;
@@ -42,6 +43,7 @@ public class ProfileService {
 	private final StoragePathPolicy storagePathPolicy;
 	private final SupabaseStorageClient storageClient;
 	private final StorageProperties storageProperties;
+	private final UserBlockRepository userBlockRepository;
 
 	@Transactional
 	public ProfileFindResponse handleProfileSave(Long userId, ProfileSaveRequest request) {
@@ -98,9 +100,12 @@ public class ProfileService {
 	}
 
 	@Transactional(readOnly = true)
-	public PublicProfileFindResponse findPublicProfile(Long userId) {
+	public PublicProfileFindResponse findPublicProfile(Long viewerId, Long userId) {
 		Profile profile = profileRepository.findById(userId)
 				.orElseThrow(() -> new CustomException(ProfileErrorCode.PROFILE_NOT_FOUND));
+		if (userBlockRepository.existsUserBlockBetween(viewerId, userId)) {
+			throw new CustomException(ProfileErrorCode.PROFILE_NOT_FOUND);
+		}
 		return PublicProfileFindResponse.of(profile, profileImageUrl(profile), ageOf(profile.getBirthDate()));
 	}
 
