@@ -163,8 +163,14 @@ public class CorrectionService {
 	}
 
 	@Transactional(readOnly = true)
-	public Optional<PublicCorrectionResponse> findPublicCorrection(Long diaryId) {
+	/**
+	 * 공개 기록 상세에 보여 줄 교정 결과. 작성자가 결과를 읽기 전에는 교정한 본인과 작성자에게만 보여 주고,
+	 * 다른 사람에게는 교정 전 원문만 보이게 한다.
+	 */
+	public Optional<PublicCorrectionResponse> findPublicCorrection(Long viewerId, Long diaryId, boolean viewerIsAuthor) {
 		return correctionRepository.findCorrectionWithItemsByDiaryId(diaryId)
+				.filter(correction -> correction.getReadAt() != null || viewerIsAuthor
+						|| correction.getCorrector().getId().equals(viewerId))
 				.map(correction -> new PublicCorrectionResponse(
 						correction.getId(),
 						toCorrector(correction),

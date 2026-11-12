@@ -94,7 +94,7 @@ public class PublicDiaryService {
 				mine,
 				!mine && request.map(r -> r.isCorrectableBy(userId, now)).orElse(false),
 				!mine && correctionService.hasCorrected(userId, diaryId),
-				correctionService.findPublicCorrection(diaryId)
+				correctionService.findPublicCorrection(userId, diaryId, mine)
 						.filter(correction -> isVisibleCorrection(userId, correction))
 						.orElse(null)
 		);
