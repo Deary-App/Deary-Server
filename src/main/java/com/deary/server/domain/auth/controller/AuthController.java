@@ -30,7 +30,7 @@ public class AuthController {
 
 	private final AuthService authService;
 
-	@Operation(summary = "Apple 로그인", description = "Apple identity token과 nonce 원문을 검증하고 서버 토큰을 발급한다. 처음이면 계정을 만든다.")
+	@Operation(summary = "Apple 로그인", description = "Apple identity token과 nonce 원문을 검증하고 서버 토큰을 발급한다. 처음이면 계정을 만든다. authorizationCode가 있으면 탈퇴 시 Apple 연결 해지에 쓸 refresh token을 받아 암호화해 저장한다(실패해도 로그인은 성공).")
 	@SecurityRequirements
 	@ApiResponse(responseCode = "200", description = "로그인 성공")
 	@ApiResponse(responseCode = "400", description = "필수 값 누락 (COMMON_INVALID_INPUT)",

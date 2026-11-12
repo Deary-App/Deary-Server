@@ -5,6 +5,7 @@ import com.deary.server.domain.user.entity.SocialProvider;
 public record SocialUserInfo(
 		SocialProvider provider,
 		String providerUserId,
-		String email
+		String email,
+		String clientId
 ) {
 }
