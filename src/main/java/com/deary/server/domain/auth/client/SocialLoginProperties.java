@@ -12,8 +12,22 @@ public record SocialLoginProperties(
 	public record Apple(
 			String issuer,
 			String jwkSetUri,
-			List<String> clientIds
+			List<String> clientIds,
+			String tokenUri,
+			String revokeUri,
+			String teamId,
+			String keyId,
+			String privateKey
 	) {
+
+		public boolean revokeConfigured() {
+			return hasText(teamId) && hasText(keyId) && hasText(privateKey);
+		}
+
+		private static boolean hasText(String value) {
+			return value != null && !value.isBlank();
+		}
+
 	}
 
 	public record Google(
