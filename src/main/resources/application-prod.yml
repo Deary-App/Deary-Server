@@ -11,3 +11,6 @@ springdoc:
     enabled: false
   swagger-ui:
     enabled: false
+
+sentry:
+  environment: prod
