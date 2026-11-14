@@ -6,13 +6,17 @@ import com.deary.server.domain.correction.dto.response.CorrectionClaimResponse;
 import com.deary.server.domain.correction.dto.response.CorrectionCreateResponse;
 import com.deary.server.domain.correction.dto.response.CorrectionFindAllResponse;
 import com.deary.server.domain.correction.dto.response.CorrectionFindResponse;
+import com.deary.server.domain.correction.dto.response.CorrectionReactionCreateResponse;
 import com.deary.server.domain.correction.dto.response.PublicCorrectionResponse;
 import com.deary.server.domain.correction.entity.Correction;
 import com.deary.server.domain.correction.entity.CorrectionBadge;
 import com.deary.server.domain.correction.entity.CorrectionItem;
+import com.deary.server.domain.correction.entity.CorrectionReaction;
+import com.deary.server.domain.correction.entity.CorrectionReactionType;
 import com.deary.server.domain.correction.entity.CorrectionRequest;
 import com.deary.server.domain.correction.entity.CorrectionRequestStatus;
 import com.deary.server.domain.correction.exception.CorrectionErrorCode;
+import com.deary.server.domain.correction.repository.CorrectionReactionRepository;
 import com.deary.server.domain.correction.repository.CorrectionRepository;
 import com.deary.server.domain.correction.repository.CorrectionRequestRepository;
 import com.deary.server.domain.diary.dto.response.DiaryAuthorResponse;
@@ -25,6 +29,7 @@ import com.deary.server.domain.report.entity.ReportTargetType;
 import com.deary.server.domain.report.service.ReportService;
 import com.deary.server.domain.user.entity.User;
 import com.deary.server.domain.user.service.UserService;
+import com.deary.server.global.exception.CommonErrorCode;
 import com.deary.server.global.exception.CustomException;
 import java.time.Instant;
 import java.util.Collection;
@@ -59,6 +64,7 @@ public class CorrectionService {
 	private final CorrectionProperties correctionProperties;
 	private final BlockService blockService;
 	private final ReportService reportService;
+	private final CorrectionReactionRepository correctionReactionRepository;
 
 	@Transactional
 	public CorrectionClaimResponse handleClaim(Long userId, Long diaryId) {
@@ -158,7 +164,8 @@ public class CorrectionService {
 				correction.getComment(),
 				correction.getCreatedAt(),
 				correction.getReadAt(),
-				toItems(correction)
+				toItems(correction),
+				correctionReactionRepository.findAllTypeByCorrectionIdAndSenderId(correction.getId(), userId)
 		);
 	}
 
@@ -189,6 +196,9 @@ public class CorrectionService {
 		List<Correction> fetched = correctionRepository.findAllCorrectionByCorrectorId(userId, cursor, Limit.of(size + 1));
 		boolean hasNext = fetched.size() > size;
 		List<Correction> corrections = hasNext ? fetched.subList(0, size) : fetched;
+		Map<Long, List<CorrectionReaction>> reactions = corrections.isEmpty() ? Map.of()
+				: correctionReactionRepository.findAllCorrectionReactionByCorrectionIdIn(corrections.stream().map(Correction::getId).toList())
+						.stream().collect(Collectors.groupingBy(reaction -> reaction.getCorrection().getId()));
 		List<CorrectionFindAllResponse.Activity> activities = corrections.stream()
 				.map(correction -> {
 					Diary diary = correction.getRequest().getDiary();
@@ -198,10 +208,37 @@ public class CorrectionService {
 							diary.getDiaryDate(),
 							excerpt(diary.getContent()),
 							correction.getComment(),
-							correction.getCreatedAt());
+							correction.getCreatedAt(),
+							reactions.getOrDefault(correction.getId(), List.of()).stream().map(CorrectionReaction::getType).distinct().toList(),
+							reactions.getOrDefault(correction.getId(), List.of()).stream().anyMatch(reaction -> reaction.getReadAt() == null));
 				})
 				.toList();
 		return new CorrectionFindAllResponse(activities, hasNext ? corrections.getLast().getId() : null);
+	}
+
+	/**
+	 * 내 기록의 교정에 반응(예: 고마워요)을 보낸다. 같은 종류를 다시 보내면 새로 만들지 않고 처음 보낸 반응을 돌려준다.
+	 */
+	@Transactional
+	public CorrectionReactionCreateResponse generateCorrectionReaction(Long userId, Long diaryId, CorrectionReactionType type) {
+		Correction correction = findCorrectionOfOwnedDiary(userId, diaryId);
+		CorrectionReaction reaction = correctionReactionRepository
+				.findCorrectionReactionByCorrectionIdAndSenderIdAndType(correction.getId(), userId, type)
+				.orElseGet(() -> saveCorrectionReaction(correction, userId, type));
+		return new CorrectionReactionCreateResponse(reaction.getId(), reaction.getType(), reaction.getCreatedAt());
+	}
+
+	/**
+	 * 내가 한 교정에 받은 반응을 모두 확인한 것으로 표시한다(내 첨삭 활동 화면 진입 시).
+	 */
+	@Transactional
+	public void modifyAllCorrectionReactionRead(Long userId) {
+		correctionReactionRepository.updateAllCorrectionReactionReadByCorrectorId(userId, Instant.now());
+	}
+
+	@Transactional(readOnly = true)
+	public boolean hasUnreadCorrectionReaction(Long userId) {
+		return correctionReactionRepository.existsUnreadCorrectionReactionByCorrectorId(userId);
 	}
 
 	@Transactional(readOnly = true)
@@ -234,6 +271,15 @@ public class CorrectionService {
 		correctionRequestRepository.findAllCorrectionRequestByClaimedById(userId)
 				.forEach(CorrectionRequest::release);
 		correctionRequestRepository.flush();
+	}
+
+	// 같은 반응이 동시에 두 번 들어오면 unique 제약으로 한 건만 저장된다(차단·신고와 같은 처리).
+	private CorrectionReaction saveCorrectionReaction(Correction correction, Long userId, CorrectionReactionType type) {
+		try {
+			return correctionReactionRepository.saveAndFlush(CorrectionReaction.create(correction, userService.findUser(userId), type));
+		} catch (DataIntegrityViolationException exception) {
+			throw new CustomException(CommonErrorCode.CONFLICT);
+		}
 	}
 
 	private CorrectionRequest findRequest(Long diaryId) {
