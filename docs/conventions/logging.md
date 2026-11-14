@@ -13,10 +13,19 @@
 
 | 레벨 | 쓰는 때 |
 | --- | --- |
-| `ERROR` | 예상하지 못한 예외. 스택을 함께 남긴다 (`GlobalExceptionHandler`) |
-| `WARN` | `CustomException` 같은 처리된 비즈니스 실패. 오류 코드와 경로만 남긴다 |
+| `ERROR` | 예상하지 못한 예외와 5xx `CustomException`(외부 저장소·소셜 로그인 연결 실패 등). 스택을 함께 남긴다 (`GlobalExceptionHandler`) |
+| `WARN` | 4xx `CustomException` 같은 처리된 비즈니스 실패. 오류 코드와 경로만 남긴다 |
 | `INFO` | 요청 완료, 외부 API 호출 결과처럼 흐름 확인에 필요한 정보 |
 | `DEBUG` | 로컬 디버깅용. 운영에서 켜 두지 않는다 |
+
+## Sentry
+
+- `sentry-logback`으로 ERROR 로그를 Sentry 이벤트로 보낸다. 따라서 5xx만 전송되고 4xx(WARN)는 보내지 않는다. INFO 이상 로그는 이벤트의 breadcrumb로 함께 남는다.
+- `SENTRY_DSN`이 있는 prod에서만 켠다. `application-local.yml`은 DSN을 비워 항상 끈다.
+- MDC의 `traceId`를 Sentry 태그로 붙인다. `X-Trace-Id` 값으로 Sentry 이벤트와 서버 로그를 서로 찾는다.
+- `send-default-pii: false`로 요청 헤더·쿠키·사용자 IP를 보내지 않는다. 아래 "기록하지 않는 것"은 Sentry로 가는 로그에도 그대로 적용된다.
+- 성능 추적은 `SENTRY_TRACES_SAMPLE_RATE`(기본 0)로 조절한다.
+- 서버와 iOS는 Sentry 프로젝트를 나누고, 알림 채널은 Sentry 대시보드의 Alert Rule에서 프로젝트별로 정한다.
 
 ## 기록하지 않는 것
 

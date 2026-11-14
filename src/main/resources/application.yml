@@ -60,3 +60,13 @@ report:
 logging:
   pattern:
     level: "%5p [traceId=%X{traceId:-}]"
+
+sentry:
+  dsn: ${SENTRY_DSN:}
+  send-default-pii: false
+  traces-sample-rate: ${SENTRY_TRACES_SAMPLE_RATE:0.0}
+  in-app-includes: com.deary.server
+  context-tags: traceId
+  logging:
+    minimum-event-level: error
+    minimum-breadcrumb-level: info

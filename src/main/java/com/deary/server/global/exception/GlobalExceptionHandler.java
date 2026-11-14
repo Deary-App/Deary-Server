@@ -27,7 +27,11 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(CustomException.class)
 	public ResponseEntity<ErrorDto> handleCustomException(CustomException exception, HttpServletRequest request) {
 		ErrorCode errorCode = exception.getErrorCode();
-		log.warn("비즈니스 예외 발생: code={}, path={}", errorCode.getCode(), request.getRequestURI());
+		if (errorCode.getStatus().is5xxServerError()) {
+			log.error("서버 오류 예외 발생: code={}, path={}", errorCode.getCode(), request.getRequestURI(), exception);
+		} else {
+			log.warn("비즈니스 예외 발생: code={}, path={}", errorCode.getCode(), request.getRequestURI());
+		}
 		return toResponse(errorCode, errorCode.getMessage(), request);
 	}
 
