@@ -12,7 +12,8 @@
 | `COMPLETED` | 교정 1건 완료 | `COMPLETED` |
 
 - 일기를 쓰면 요청이 `OPEN`으로 함께 만들어진다. 일기 하나에 요청 하나, 요청 하나에 교정 하나다(unique 제약).
-- 선점 시간은 `CORRECTION_CLAIM_DURATION`(기본 30분)이다. 같은 사람이 다시 맡으면 시간을 다시 늘린다.
+- 선점 시간은 `CORRECTION_CLAIM_DURATION`(기본 30분)이다. 같은 사람이 맡은 시간 안에 다시 맡아도 시간을 늘리지 않고 기존 만료 시각을 돌려준다.
+- 한 사람은 한 번에 일기 하나만 맡는다. 다른 일기를 새로 맡으면 전에 맡던 요청은 `OPEN`으로 풀린다.
 - 선점·완료 동시 요청은 `correction_requests.version` 낙관적 잠금과 `corrections.request_id` unique 제약으로 한 건만 성공한다.
 
 ## 규칙
