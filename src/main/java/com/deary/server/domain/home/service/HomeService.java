@@ -21,7 +21,8 @@ public class HomeService {
 		return new HomeFindResponse(
 				profile.getNickname(),
 				profileService.profileImageUrl(profile),
-				correctionService.hasUnreadCorrection(userId)
+				correctionService.hasUnreadCorrection(userId),
+				correctionService.hasUnreadCorrectionReaction(userId)
 		);
 	}
 

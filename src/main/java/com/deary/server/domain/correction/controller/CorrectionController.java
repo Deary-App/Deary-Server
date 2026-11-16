@@ -1,10 +1,12 @@
 package com.deary.server.domain.correction.controller;
 
+import com.deary.server.domain.correction.dto.request.CorrectionReactionSaveRequest;
 import com.deary.server.domain.correction.dto.request.CorrectionSaveRequest;
 import com.deary.server.domain.correction.dto.response.CorrectionClaimResponse;
 import com.deary.server.domain.correction.dto.response.CorrectionCreateResponse;
 import com.deary.server.domain.correction.dto.response.CorrectionFindAllResponse;
 import com.deary.server.domain.correction.dto.response.CorrectionFindResponse;
+import com.deary.server.domain.correction.dto.response.CorrectionReactionCreateResponse;
 import com.deary.server.domain.correction.service.CorrectionService;
 import com.deary.server.global.exception.dto.ErrorDto;
 import com.deary.server.global.response.BaseResponse;
@@ -109,6 +111,31 @@ public class CorrectionController {
 			@PathVariable Long diaryId
 	) {
 		correctionService.modifyCorrectionRead(authUser.userId(), diaryId);
+		return BaseResponse.ok("읽음 처리했습니다.");
+	}
+
+	@Operation(summary = "교정에 반응 보내기", description = "내 기록의 교정에 반응(지금은 THANKS, 고마워요)을 보낸다. 같은 종류를 이미 보냈으면 새로 만들지 않고 처음 보낸 반응을 돌려준다.")
+	@ApiResponse(responseCode = "200", description = "보내기 성공(이미 보낸 경우 포함)")
+	@ApiResponse(responseCode = "400", description = "입력 오류 (COMMON_INVALID_INPUT)",
+			content = @Content(schema = @Schema(implementation = ErrorDto.class)))
+	@ApiResponse(responseCode = "404", description = "없거나 내 기록이 아님 (DIARY_NOT_FOUND), 결과 없음 (CORRECTION_NOT_FOUND)",
+			content = @Content(schema = @Schema(implementation = ErrorDto.class)))
+	@PostMapping("/diaries/{diaryId}/correction/reactions")
+	public BaseResponse<CorrectionReactionCreateResponse> createCorrectionReaction(
+			@AuthenticationPrincipal AuthUser authUser,
+			@PathVariable Long diaryId,
+			@Valid @RequestBody CorrectionReactionSaveRequest request
+	) {
+		return BaseResponse.ok("반응을 보냈습니다.", correctionService.generateCorrectionReaction(authUser.userId(), diaryId, request.type()));
+	}
+
+	@Operation(summary = "받은 교정 반응 읽음 처리", description = "내 첨삭 활동 화면 진입 시 호출한다. 내가 한 교정에 받은 반응을 모두 확인한 것으로 표시해 홈 알림이 사라진다.")
+	@ApiResponse(responseCode = "200", description = "처리 성공")
+	@PostMapping("/users/me/correction-reactions/read")
+	public BaseResponse<Void> processCorrectionReactionRead(
+			@AuthenticationPrincipal AuthUser authUser
+	) {
+		correctionService.modifyAllCorrectionReactionRead(authUser.userId());
 		return BaseResponse.ok("읽음 처리했습니다.");
 	}
 

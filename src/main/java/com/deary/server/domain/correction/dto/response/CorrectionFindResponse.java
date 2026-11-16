@@ -1,5 +1,6 @@
 package com.deary.server.domain.correction.dto.response;
 
+import com.deary.server.domain.correction.entity.CorrectionReactionType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.List;
@@ -11,7 +12,9 @@ public record CorrectionFindResponse(
 		String comment,
 		Instant correctedAt,
 		Instant readAt,
-		List<Item> items
+		List<Item> items,
+		@Schema(description = "내가 이 교정에 보낸 반응 종류 (예: THANKS)")
+		List<CorrectionReactionType> reactions
 ) {
 
 	public record Corrector(

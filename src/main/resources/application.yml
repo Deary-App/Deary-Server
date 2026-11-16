@@ -57,6 +57,11 @@ report:
   notification:
     webhook-url: ${REPORT_WEBHOOK_URL:}
 
+push:
+  expo:
+    enabled: ${PUSH_ENABLED:true}
+    access-token: ${EXPO_ACCESS_TOKEN:}
+
 logging:
   pattern:
     level: "%5p [traceId=%X{traceId:-}]"
