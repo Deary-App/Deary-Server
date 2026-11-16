@@ -14,11 +14,11 @@ public record PublicProfileFindResponse(
 		Language nativeLanguage,
 		Language learningLanguage,
 		LearningLevel learningLevel,
-		int age,
+		Integer age,
 		Gender gender
 ) {
 
-	public static PublicProfileFindResponse of(Profile profile, String profileImageUrl, int age) {
+	public static PublicProfileFindResponse of(Profile profile, String profileImageUrl, Integer age) {
 		return new PublicProfileFindResponse(
 				profile.getUserId(),
 				profile.getNickname(),

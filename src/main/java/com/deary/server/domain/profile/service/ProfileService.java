@@ -35,6 +35,7 @@ public class ProfileService {
 
 	private static final ZoneId SERVICE_ZONE = ZoneId.of("Asia/Seoul");
 	private static final int MINIMUM_AGE = 14;
+	private static final int ADULT_AGE = 18;
 	private static final Set<String> COUNTRY_CODES = Set.of(Locale.getISOCountries());
 
 	private final ProfileRepository profileRepository;
@@ -106,7 +107,7 @@ public class ProfileService {
 		if (userBlockRepository.existsUserBlockBetween(viewerId, userId)) {
 			throw new CustomException(ProfileErrorCode.PROFILE_NOT_FOUND);
 		}
-		return PublicProfileFindResponse.of(profile, profileImageUrl(profile), ageOf(profile.getBirthDate()));
+		return PublicProfileFindResponse.of(profile, profileImageUrl(profile), publicAgeOf(profile.getBirthDate()));
 	}
 
 	private void validate(Long userId, ProfileSaveRequest request) {
@@ -127,6 +128,12 @@ public class ProfileService {
 
 	public String profileImageUrl(Profile profile) {
 		return storageClient.publicUrl(storageProperties.profileBucket(), profile.getProfileImagePath());
+	}
+
+	// 18세 미만이면 다른 사람에게 나이를 보여 주지 않는다.
+	private Integer publicAgeOf(LocalDate birthDate) {
+		int age = ageOf(birthDate);
+		return age < ADULT_AGE ? null : age;
 	}
 
 	private int ageOf(LocalDate birthDate) {
