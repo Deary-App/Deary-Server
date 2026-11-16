@@ -7,3 +7,6 @@ spring:
     password: ${DB_PASSWORD:deary}
   jpa:
     show-sql: true
+
+sentry:
+  dsn: ""
