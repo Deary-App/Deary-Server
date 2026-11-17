@@ -15,6 +15,7 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -44,7 +45,9 @@ public class AuthService {
 
 	/**
 	 * 이 기기의 리프레시 토큰을 지운다. 푸시 토큰도 보냈으면 리프레시 토큰 주인의 것일 때만 함께 지운다.
+	 * 두 삭제는 한 트랜잭션이라 하나가 실패하면 둘 다 되돌린다.
 	 */
+	@Transactional
 	public void handleLogout(LogoutRequest request) {
 		Optional<Long> userId = tokenService.removeRefreshToken(request.refreshToken());
 		if (userId.isPresent() && request.pushToken() != null && !request.pushToken().isBlank()) {
