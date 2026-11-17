@@ -52,9 +52,4 @@ public class PushToken extends BaseTimeEntity {
 		return new PushToken(user, token, language);
 	}
 
-	public void assign(User user, PushLanguage language) {
-		this.user = user;
-		this.language = language;
-	}
-
 }

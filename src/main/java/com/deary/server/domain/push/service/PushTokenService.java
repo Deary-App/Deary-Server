@@ -7,6 +7,7 @@ import com.deary.server.domain.user.entity.User;
 import com.deary.server.domain.user.service.UserService;
 import com.deary.server.global.exception.CommonErrorCode;
 import com.deary.server.global.exception.CustomException;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -22,14 +23,15 @@ public class PushTokenService {
 	private final UserService userService;
 
 	/**
-	 * 이 기기의 푸시 토큰을 내 계정에 등록한다. 이미 있는 토큰이면 주인과 언어를 지금 값으로 바꾼다(같은 기기에서 계정을 바꾼 경우).
+	 * 이 기기의 푸시 토큰을 내 계정에 등록한다. 이미 있는 토큰이면 주인과 언어를 지금 값으로 바꾸고 등록 시각을 갱신한다
+	 * (같은 기기에서 계정을 바꾸거나 앱을 다시 설치한 경우).
 	 */
 	@Transactional
 	public void registerPushToken(Long userId, String token, PushLanguage language) {
 		User user = userService.findUser(userId);
-		pushTokenRepository.findPushTokenByToken(token).ifPresentOrElse(
-				pushToken -> pushToken.assign(user, language),
-				() -> savePushToken(user, token, language));
+		if (pushTokenRepository.updatePushTokenByToken(token, user, language, Instant.now()) == 0) {
+			savePushToken(user, token, language);
+		}
 	}
 
 	/**

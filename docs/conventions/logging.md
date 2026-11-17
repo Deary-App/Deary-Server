@@ -6,7 +6,7 @@
 
 - `global/logging/MdcLoggingFilter`가 모든 요청의 맨 앞에서 16자리 `traceId`를 만들어 MDC에 넣고, 응답 헤더 `X-Trace-Id`로 돌려준다.
 - 요청이 끝나면 `메서드 경로 상태코드 처리시간` 한 줄을 INFO로 남긴다. 쿼리 문자열은 기록하지 않는다.
-- 로그 패턴(`application.yml`의 `logging.pattern.level`)이 모든 로그에 `[traceId=...]`를 붙인다. 요청 밖(시작·스케줄러 등)의 로그는 비어 있다.
+- 로그 패턴(`application.yml`의 `logging.pattern.level`)이 모든 로그에 `[traceId=...]`를 붙인다. `@Async` 작업은 `AsyncConfig`의 `TaskDecorator`가 요청의 MDC를 넘겨받아 같은 `traceId`로 남는다. 요청 밖(시작·스케줄러 등)의 로그는 비어 있다.
 - 클라이언트가 오류를 제보하면 `X-Trace-Id` 값으로 서버 로그에서 해당 요청을 찾는다.
 
 ## 로그 레벨

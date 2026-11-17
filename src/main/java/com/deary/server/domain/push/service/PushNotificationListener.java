@@ -6,6 +6,7 @@ import com.deary.server.domain.profile.entity.Profile;
 import com.deary.server.domain.profile.service.ProfileService;
 import com.deary.server.domain.push.client.ExpoPushClient;
 import com.deary.server.domain.push.client.ExpoPushClient.ExpoPushMessage;
+import com.deary.server.domain.push.client.ExpoPushClient.SendResult;
 import com.deary.server.domain.push.entity.PushToken;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,7 @@ public class PushNotificationListener {
 	private static final String TYPE_CORRECTION_REACTION = "CORRECTION_REACTION";
 
 	private final PushTokenService pushTokenService;
+	private final PushTicketService pushTicketService;
 	private final ProfileService profileService;
 	private final ExpoPushClient expoPushClient;
 
@@ -64,9 +66,11 @@ public class PushNotificationListener {
 							data,
 							"default"))
 					.toList();
-			List<String> expired = expoPushClient.send(messages);
-			pushTokenService.removeAllExpiredPushToken(expired);
-			log.info("푸시 알림 전송 type={} recipientId={} devices={} expired={}", data.get("type"), recipientId, messages.size(), expired.size());
+			SendResult result = expoPushClient.send(messages);
+			pushTokenService.removeAllExpiredPushToken(result.expiredTokens());
+			pushTicketService.registerAllPushTicket(result.acceptedTickets());
+			log.info("푸시 알림 전송 type={} recipientId={} devices={} expired={}",
+					data.get("type"), recipientId, messages.size(), result.expiredTokens().size());
 		} catch (RuntimeException exception) {
 			log.warn("푸시 알림 전송 실패 type={} recipientId={} error={}", data.get("type"), recipientId, exception.getClass().getSimpleName());
 		}

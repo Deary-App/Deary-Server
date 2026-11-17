@@ -10,6 +10,7 @@ import com.deary.server.global.jwt.AccessTokenProvider;
 import com.deary.server.global.exception.CustomException;
 import com.deary.server.global.jwt.JwtProperties;
 import java.time.Instant;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,8 +56,15 @@ public class TokenService {
 	}
 
 	@Transactional
-	public void removeRefreshToken(String rawRefreshToken) {
-		refreshTokenRepository.deleteRefreshTokenByTokenHash(refreshTokenHasher.hash(rawRefreshToken));
+	/**
+	 * 리프레시 토큰을 지우고 그 주인의 ID를 돌려준다. 없는 토큰이면 비어 있다.
+	 */
+	public Optional<Long> removeRefreshToken(String rawRefreshToken) {
+		String tokenHash = refreshTokenHasher.hash(rawRefreshToken);
+		Optional<Long> userId = refreshTokenRepository.findRefreshTokenByTokenHash(tokenHash)
+				.map(refreshToken -> refreshToken.getUser().getId());
+		refreshTokenRepository.deleteRefreshTokenByTokenHash(tokenHash);
+		return userId;
 	}
 
 }

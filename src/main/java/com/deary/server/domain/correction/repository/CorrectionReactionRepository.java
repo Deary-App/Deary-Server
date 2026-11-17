@@ -20,12 +20,33 @@ public interface CorrectionReactionRepository extends JpaRepository<CorrectionRe
 	List<CorrectionReactionType> findAllTypeByCorrectionIdAndSenderId(@Param("correctionId") Long correctionId,
 			@Param("senderId") Long senderId);
 
-	@Query("select r from CorrectionReaction r where r.correction.id in :correctionIds")
+	// 교정한 사람과 보낸 사람이 차단 관계(양방향)인 반응은 교정한 사람에게 보이지 않게 뺀다.
+	@Query("""
+			select r from CorrectionReaction r
+			where r.correction.id in :correctionIds
+			and not exists (
+				select b.id from UserBlock b
+				where b.blocker.id = r.correction.corrector.id and b.blocked.id = r.sender.id
+			)
+			and not exists (
+				select b.id from UserBlock b
+				where b.blocker.id = r.sender.id and b.blocked.id = r.correction.corrector.id
+			)
+			""")
 	List<CorrectionReaction> findAllCorrectionReactionByCorrectionIdIn(@Param("correctionIds") Collection<Long> correctionIds);
 
+	// 차단 관계(양방향)인 사람이 보낸 반응은 확인하지 않은 반응으로 세지 않는다.
 	@Query("""
 			select count(r) > 0 from CorrectionReaction r
 			where r.correction.corrector.id = :correctorId and r.readAt is null
+			and not exists (
+				select b.id from UserBlock b
+				where b.blocker.id = :correctorId and b.blocked.id = r.sender.id
+			)
+			and not exists (
+				select b.id from UserBlock b
+				where b.blocker.id = r.sender.id and b.blocked.id = :correctorId
+			)
 			""")
 	boolean existsUnreadCorrectionReactionByCorrectorId(@Param("correctorId") Long correctorId);
 
