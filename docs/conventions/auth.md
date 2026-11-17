@@ -68,4 +68,5 @@ App Store 가이드라인 5.1.1(v)에 따라 탈퇴할 때 Sign in with Apple �
 ## 공개 경로
 
 - 인증 없이 열려 있는 경로는 `SecurityConfig`의 `permitAll` 목록이다. 로그인처럼 공개가 필요한 API를 추가하면 이 목록에 경로를 정확히 추가한다.
+- 로그인·재발급·로그아웃(`PUBLIC_AUTH_PATHS`)은 `Authorization` 헤더를 읽지 않는다. 만료되거나 세션이 끊긴 액세스 토큰이 헤더에 남아 있어도 401로 막히지 않고 재발급할 수 있게 하기 위해서다.
 - Swagger는 `bearerAuth` 보안 스킴이 설정돼 있어 Authorize 버튼에 액세스 토큰을 넣고 시험할 수 있다. `prod` 프로필에서는 Swagger가 꺼져 있다.
