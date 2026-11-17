@@ -24,7 +24,7 @@ public class PushReceiptScheduler {
 	private static final Duration RECEIPT_DELAY = Duration.ofMinutes(15);
 	private static final Duration RECEIPT_RETENTION = Duration.ofHours(24);
 	// Expo receipt 조회 한 번에 넣을 수 있는 최대 접수표 수
-	private static final int MAX_TICKETS_PER_REQUEST = 1000;
+	static final int MAX_TICKETS_PER_REQUEST = 1000;
 
 	private final PushTicketService pushTicketService;
 	private final ExpoPushClient expoPushClient;
@@ -38,16 +38,27 @@ public class PushReceiptScheduler {
 		if (!expoPushClient.enabled()) {
 			return;
 		}
+		Instant createdBefore = now.minus(RECEIPT_DELAY);
+		long lastId = 0L;
+		int checked = 0;
+		int deviceNotRegistered = 0;
 		try {
+			// 결과 조회가 실패해도 보관 기간이 지난 접수표는 먼저 정리한다(따로 커밋된다).
+			int stale = pushTicketService.removeAllStalePushTicket(now.minus(RECEIPT_RETENTION));
 			List<PushTicket> tickets = pushTicketService.findAllPushTicketCreatedBefore(
-					now.minus(RECEIPT_DELAY), MAX_TICKETS_PER_REQUEST);
-			if (tickets.isEmpty()) {
-				return;
+					createdBefore, lastId, MAX_TICKETS_PER_REQUEST);
+			// 결과가 아직 없는 접수표가 1000건을 넘어도 뒤의 접수표까지 한 번씩 조회한다.
+			while (!tickets.isEmpty()) {
+				ReceiptResult result = expoPushClient.findAllReceipt(tickets.stream().map(PushTicket::getTicketId).toList());
+				pushTicketService.handleReceiptResult(tickets, result);
+				checked += result.checkedTicketIds().size();
+				deviceNotRegistered += result.deviceNotRegisteredTicketIds().size();
+				lastId = tickets.getLast().getId();
+				tickets = pushTicketService.findAllPushTicketCreatedBefore(createdBefore, lastId, MAX_TICKETS_PER_REQUEST);
 			}
-			ReceiptResult result = expoPushClient.findAllReceipt(tickets.stream().map(PushTicket::getTicketId).toList());
-			pushTicketService.handleReceiptResult(tickets, result, now.minus(RECEIPT_RETENTION));
-			log.info("푸시 전달 결과 확인 tickets={} checked={} deviceNotRegistered={}",
-					tickets.size(), result.checkedTicketIds().size(), result.deviceNotRegisteredTicketIds().size());
+			if (stale > 0 || checked > 0) {
+				log.info("푸시 전달 결과 확인 checked={} deviceNotRegistered={} stale={}", checked, deviceNotRegistered, stale);
+			}
 		} catch (RuntimeException exception) {
 			log.warn("푸시 전달 결과 확인 실패 error={}", exception.getClass().getSimpleName());
 		}
