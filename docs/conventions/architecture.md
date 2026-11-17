@@ -30,3 +30,5 @@ domain/{기능}/
 - 다른 도메인이 필요하면 그 도메인의 공개 Service나 조회 기능을 사용하고, 다른 도메인의 DTO·Entity 내부를 직접 조작하지 않는다.
 - 인터페이스의 구현체에는 `Impl` 접미사를 붙인다.
 - 새 패키지나 추상화를 만들기 전에 같은 도메인의 기존 구현을 살핀다.
+- 외부 알림(푸시·웹훅)처럼 원래 요청의 성공과 무관한 작업은 이벤트를 발행하고 `@TransactionalEventListener(AFTER_COMMIT)` + `@Async` 리스너에서 처리한다. 실패는 WARN 로그로 남기고 원래 요청을 실패시키지 않는다.
+- 주기 작업은 해당 도메인의 `service/`에 `...Scheduler` 컴포넌트로 두고 `@Scheduled`를 쓴다(`global/config/SchedulingConfig`). 서버가 여러 대여도 결과가 같도록 멱등하게 작성한다. 예: `PushReceiptScheduler`가 15분마다 Expo 전달 결과를 조회해 앱이 지워진 기기의 푸시 토큰과 확인한 접수표(`push_tickets`)를 지운다.
