@@ -87,7 +87,11 @@ public class CorrectionService {
 		if (request.isClaimActiveAt(now) && !request.isClaimedActiveBy(userId, now)) {
 			throw new CustomException(CorrectionErrorCode.ALREADY_CLAIMED);
 		}
-		request.claim(corrector, now.plus(correctionProperties.claimDuration()));
+		// 이미 맡고 있으면 맡은 시간을 늘리지 않고 그대로 돌려준다.
+		if (!request.isClaimedActiveBy(userId, now)) {
+			releaseOtherClaims(userId, request);
+			request.claim(corrector, now.plus(correctionProperties.claimDuration()));
+		}
 		try {
 			correctionRequestRepository.flush();
 		} catch (ObjectOptimisticLockingFailureException exception) {
@@ -290,6 +294,13 @@ public class CorrectionService {
 		} catch (DataIntegrityViolationException exception) {
 			throw new CustomException(CommonErrorCode.CONFLICT);
 		}
+	}
+
+	// 한 사람은 한 번에 일기 하나만 맡는다. 새로 맡으면 전에 맡던 요청(시간이 지난 것 포함)을 푼다.
+	private void releaseOtherClaims(Long userId, CorrectionRequest target) {
+		correctionRequestRepository.findAllCorrectionRequestByClaimedById(userId).stream()
+				.filter(request -> !request.getId().equals(target.getId()))
+				.forEach(CorrectionRequest::release);
 	}
 
 	private CorrectionRequest findRequest(Long diaryId) {
