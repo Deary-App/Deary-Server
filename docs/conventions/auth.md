@@ -26,7 +26,7 @@
 
 | 구분 | 형식 | 만료 | 저장 |
 | --- | --- | --- | --- |
-| 액세스 토큰 | HS256 서명 JWT. `iss`=`jwt.issuer`, `sub`=사용자 ID, `iat`, `exp` | 30분 (`JWT_ACCESS_TOKEN_EXPIRATION`) | 저장하지 않음 |
+| 액세스 토큰 | HS256 서명 JWT. `iss`=`jwt.issuer`, `sub`=사용자 ID, `sid`=세션 ID(`refresh_tokens.id`), `iat`, `exp` | 30분 (`JWT_ACCESS_TOKEN_EXPIRATION`) | 저장하지 않음. `sid`로 세션을 확인 |
 | 리프레시 토큰 | 32바이트 임의 값의 Base64URL 문자열 | 14일 (`JWT_REFRESH_TOKEN_EXPIRATION`) | `refresh_tokens`에 SHA-256 해시만 저장 |
 
 - 토큰 발급은 `TokenService.generateTokens(userId)`로 하고, 응답은 `TokenIssueResponse`(두 토큰과 각 만료 초)다.
@@ -38,13 +38,14 @@
 
 | API | 인증 | 동작 |
 | --- | --- | --- |
-| `POST /api/v1/auth/reissue` | 없음 | `refreshToken`으로 새 토큰 쌍 발급. 사용한 토큰은 즉시 삭제하고, 없거나 만료됐거나 이미 쓴 토큰은 `AUTH_INVALID_REFRESH_TOKEN`(401) |
-| `POST /api/v1/auth/logout` | 없음 | 이 기기의 `refreshToken`을 삭제. 선택 값 `pushToken`을 보내면 리프레시 토큰 주인의 푸시 토큰일 때만 함께 삭제. 없는 토큰이어도 성공 |
-| `DELETE /api/v1/users/me` | 필요 | 사용자를 삭제하고 FK `on delete cascade`로 소셜 계정·리프레시 토큰을 함께 삭제. 복구 불가 |
+| `POST /api/v1/auth/reissue` | 없음 | `refreshToken`으로 새 토큰 쌍 발급. 같은 세션 행을 유지하고 토큰 해시와 만료만 교체한다. 없거나 만료됐거나 이미 쓴 토큰은 `AUTH_INVALID_REFRESH_TOKEN`(401) |
+| `POST /api/v1/auth/logout` | 없음 | 이 기기의 `refreshToken`(세션)만 삭제. 이 세션의 액세스 토큰도 즉시 거절된다. 선택 값 `pushToken`을 보내면 리프레시 토큰 주인의 푸시 토큰일 때만 함께 삭제. 없는 토큰이어도 성공 |
+| `DELETE /api/v1/users/me` | 필요 | 사용자를 삭제하고 FK `on delete cascade`로 소셜 계정·리프레시 토큰을 함께 삭제. 모든 기기의 액세스 토큰이 즉시 거절된다. 복구 불가 |
 
-- 재발급은 조회 후 `delete` 결과 행 수로 사용 여부를 판단한다. 같은 토큰으로 동시에 요청하면 한 요청만 새 토큰을 받는다.
-- 만료된 토큰으로 재발급을 요청하면 그 토큰도 삭제한 뒤 401로 응답한다.
-- 액세스 토큰은 서버에 저장하지 않아 로그아웃·탈퇴 후에도 만료(최대 30분)까지 유효하다. 탈퇴한 사용자의 요청은 각 API에서 사용자 조회 결과로 거절한다.
+- 재발급은 `id`와 이전 토큰 해시를 조건으로 한 `update` 결과 행 수로 사용 여부를 판단한다. 같은 토큰으로 동시에 요청하면 한 요청만 새 토큰을 받는다.
+- 재발급 때 세션 행을 지우고 새로 만들지 않는다. 행을 바꾸면 `sid`가 달라져 재발급 중에 나간 다른 요청이 401을 받기 때문이다. 재발급 전 액세스 토큰도 같은 `sid`라 만료까지 쓸 수 있다.
+- 만료된 토큰으로 재발급을 요청하면 그 세션을 삭제한 뒤 401로 응답한다.
+- 액세스 토큰 블랙리스트(jti)는 두지 않는다. 세션 확인으로 기기별 로그아웃·탈퇴를 처리하고, 계정 정지나 전체 기기 로그아웃도 해당 사용자의 `refresh_tokens`를 지우면 된다.
 - 회원 데이터를 담는 새 테이블은 `users`를 `on delete cascade`로 참조해 탈퇴 시 함께 지워지게 한다. 스토리지 파일(사진)은 해당 기능에서 삭제 처리를 추가한다.
 
 ## Apple 계정 연결 해지
@@ -59,11 +60,13 @@ App Store 가이드라인 5.1.1(v)에 따라 탈퇴할 때 Sign in with Apple �
 
 ## 인증 사용자 식별
 
-- 검증된 토큰은 `AuthUserAuthenticationConverter`가 `AuthUser(userId)` principal로 바꾼다.
+- 검증된 토큰은 `AuthUserAuthenticationConverter`가 `AuthUser(userId)` principal로 바꾼다. 이때 `AuthSessionVerifier`로 `sid` 세션이 그 사용자의 것이고 만료되지 않았는지 요청마다 DB에서 확인한다(1회 조회). 구현은 `domain/auth`의 `AuthSessionService`다.
+- `sid`가 없거나 숫자가 아닌 토큰, 세션이 없거나 만료되었거나 다른 사용자의 세션인 토큰은 401이다. `sid` 도입 전에 발급된 토큰도 401이며, 앱은 리프레시 토큰으로 재발급한다.
 - Controller는 `@AuthenticationPrincipal AuthUser authUser`로 받아 `authUser.userId()`를 Service에 넘긴다. 클라이언트가 보낸 사용자 ID로 소유권을 판단하지 않는다.
 - 토큰이 없거나 위조·만료·형식 오류이면 `CommonErrorCode.UNAUTHORIZED`(401) `ErrorDto`로 응답한다.
 
 ## 공개 경로
 
 - 인증 없이 열려 있는 경로는 `SecurityConfig`의 `permitAll` 목록이다. 로그인처럼 공개가 필요한 API를 추가하면 이 목록에 경로를 정확히 추가한다.
+- 로그인·재발급·로그아웃(`PUBLIC_AUTH_PATHS`)은 `Authorization` 헤더를 읽지 않는다. 만료되거나 세션이 끊긴 액세스 토큰이 헤더에 남아 있어도 401로 막히지 않고 재발급할 수 있게 하기 위해서다.
 - Swagger는 `bearerAuth` 보안 스킴이 설정돼 있어 Authorize 버튼에 액세스 토큰을 넣고 시험할 수 있다. `prod` 프로필에서는 Swagger가 꺼져 있다.
