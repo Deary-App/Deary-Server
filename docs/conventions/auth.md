@@ -39,7 +39,7 @@
 | API | 인증 | 동작 |
 | --- | --- | --- |
 | `POST /api/v1/auth/reissue` | 없음 | `refreshToken`으로 새 토큰 쌍 발급. 같은 세션 행을 유지하고 토큰 해시와 만료만 교체한다. 없거나 만료됐거나 이미 쓴 토큰은 `AUTH_INVALID_REFRESH_TOKEN`(401) |
-| `POST /api/v1/auth/logout` | 없음 | 이 기기의 `refreshToken`(세션)만 삭제. 이 세션의 액세스 토큰도 즉시 거절된다. 없는 토큰이어도 성공 |
+| `POST /api/v1/auth/logout` | 없음 | 이 기기의 `refreshToken`(세션)만 삭제. 이 세션의 액세스 토큰도 즉시 거절된다. 선택 값 `pushToken`을 보내면 리프레시 토큰 주인의 푸시 토큰일 때만 함께 삭제. 없는 토큰이어도 성공 |
 | `DELETE /api/v1/users/me` | 필요 | 사용자를 삭제하고 FK `on delete cascade`로 소셜 계정·리프레시 토큰을 함께 삭제. 모든 기기의 액세스 토큰이 즉시 거절된다. 복구 불가 |
 
 - 재발급은 `id`와 이전 토큰 해시를 조건으로 한 `update` 결과 행 수로 사용 여부를 판단한다. 같은 토큰으로 동시에 요청하면 한 요청만 새 토큰을 받는다.
