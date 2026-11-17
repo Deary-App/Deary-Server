@@ -70,7 +70,8 @@ public class AuthController {
 		return BaseResponse.ok("토큰을 재발급했습니다.", authService.handleReissue(request));
 	}
 
-	@Operation(summary = "로그아웃", description = "이 기기의 리프레시 토큰을 폐기한다. 없는 토큰이어도 성공으로 응답한다.")
+	@Operation(summary = "로그아웃", description = "이 기기의 리프레시 토큰을 폐기한다. pushToken을 함께 보내면 이 기기의 푸시 토큰도 지워 "
+			+ "로그아웃한 계정의 알림이 오지 않게 한다. 없는 토큰이어도 성공으로 응답한다.")
 	@SecurityRequirements
 	@ApiResponse(responseCode = "200", description = "로그아웃 성공")
 	@ApiResponse(responseCode = "400", description = "필수 값 누락 (COMMON_INVALID_INPUT)",

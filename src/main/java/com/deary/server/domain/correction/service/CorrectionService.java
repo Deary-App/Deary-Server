@@ -227,7 +227,8 @@ public class CorrectionService {
 
 	/**
 	 * 내 기록의 교정에 반응(예: 고마워요)을 보낸다. 같은 종류를 다시 보내면 새로 만들지 않고 처음 보낸 반응을 돌려준다.
-	 * 처음 보낼 때만 교정한 사람에게 알림을 보낸다.
+	 * 처음 보낼 때만 교정한 사람에게 알림을 보낸다. 교정한 사람과 차단 관계면 반응은 저장하되 알림을 보내지 않고,
+	 * 교정한 사람의 목록·홈에서도 보이지 않는다.
 	 */
 	@Transactional
 	public CorrectionReactionCreateResponse generateCorrectionReaction(Long userId, Long diaryId, CorrectionReactionType type) {
@@ -235,7 +236,7 @@ public class CorrectionService {
 		Optional<CorrectionReaction> existing = correctionReactionRepository
 				.findCorrectionReactionByCorrectionIdAndSenderIdAndType(correction.getId(), userId, type);
 		CorrectionReaction reaction = existing.orElseGet(() -> saveCorrectionReaction(correction, userId, type));
-		if (existing.isEmpty()) {
+		if (existing.isEmpty() && !blockService.isBlockedBetween(userId, correction.getCorrector().getId())) {
 			eventPublisher.publishEvent(new CorrectionReactionCreatedEvent(
 					diaryId, correction.getCorrector().getId(), userId, type));
 		}
