@@ -28,35 +28,51 @@ public class TokenService {
 	public TokenIssueResponse generateTokens(Long userId) {
 		User user = userRepository.getReferenceById(userId);
 		String rawRefreshToken = refreshTokenHasher.generateRawToken();
-		Instant refreshTokenExpiresAt = Instant.now().plus(jwtProperties.refreshTokenExpiration());
-		refreshTokenRepository.save(
-				RefreshToken.create(refreshTokenHasher.hash(rawRefreshToken), refreshTokenExpiresAt, user)
+		RefreshToken refreshToken = refreshTokenRepository.save(
+				RefreshToken.create(refreshTokenHasher.hash(rawRefreshToken), newRefreshTokenExpiresAt(), user)
 		);
-		return new TokenIssueResponse(
-				accessTokenProvider.generateAccessToken(userId),
-				rawRefreshToken,
-				jwtProperties.accessTokenExpiration().toSeconds(),
-				jwtProperties.refreshTokenExpiration().toSeconds()
-		);
+		return toTokenIssueResponse(userId, refreshToken.getId(), rawRefreshToken);
 	}
 
 	@Transactional(noRollbackFor = CustomException.class)
 	public TokenIssueResponse handleReissue(String rawRefreshToken) {
+		String oldTokenHash = refreshTokenHasher.hash(rawRefreshToken);
 		RefreshToken refreshToken = refreshTokenRepository
-				.findRefreshTokenByTokenHash(refreshTokenHasher.hash(rawRefreshToken))
+				.findRefreshTokenByTokenHash(oldTokenHash)
 				.orElseThrow(() -> new CustomException(AuthErrorCode.INVALID_REFRESH_TOKEN));
 		Long userId = refreshToken.getUser().getId();
-		boolean expired = refreshToken.isExpired(Instant.now());
-		int deleted = refreshTokenRepository.deleteRefreshTokenById(refreshToken.getId());
-		if (deleted == 0 || expired) {
+		Long sessionId = refreshToken.getId();
+		Instant now = Instant.now();
+		if (refreshToken.isExpired(now)) {
+			refreshTokenRepository.deleteRefreshTokenById(sessionId);
 			throw new CustomException(AuthErrorCode.INVALID_REFRESH_TOKEN);
 		}
-		return generateTokens(userId);
+		String newRawRefreshToken = refreshTokenHasher.generateRawToken();
+		int updated = refreshTokenRepository.updateRefreshTokenHash(
+				sessionId, oldTokenHash, refreshTokenHasher.hash(newRawRefreshToken), newRefreshTokenExpiresAt(), now
+		);
+		if (updated == 0) {
+			throw new CustomException(AuthErrorCode.INVALID_REFRESH_TOKEN);
+		}
+		return toTokenIssueResponse(userId, sessionId, newRawRefreshToken);
 	}
 
 	@Transactional
 	public void removeRefreshToken(String rawRefreshToken) {
 		refreshTokenRepository.deleteRefreshTokenByTokenHash(refreshTokenHasher.hash(rawRefreshToken));
+	}
+
+	private Instant newRefreshTokenExpiresAt() {
+		return Instant.now().plus(jwtProperties.refreshTokenExpiration());
+	}
+
+	private TokenIssueResponse toTokenIssueResponse(Long userId, Long sessionId, String rawRefreshToken) {
+		return new TokenIssueResponse(
+				accessTokenProvider.generateAccessToken(userId, sessionId),
+				rawRefreshToken,
+				jwtProperties.accessTokenExpiration().toSeconds(),
+				jwtProperties.refreshTokenExpiration().toSeconds()
+		);
 	}
 
 }
