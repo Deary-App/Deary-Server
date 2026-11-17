@@ -13,10 +13,12 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class AccessTokenProvider {
 
+	public static final String SESSION_ID_CLAIM = "sid";
+
 	private final JwtEncoder jwtEncoder;
 	private final JwtProperties jwtProperties;
 
-	public String generateAccessToken(Long userId) {
+	public String generateAccessToken(Long userId, Long sessionId) {
 		Instant now = Instant.now();
 		JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();
 		JwtClaimsSet claims = JwtClaimsSet.builder()
@@ -24,6 +26,7 @@ public class AccessTokenProvider {
 				.subject(String.valueOf(userId))
 				.issuedAt(now)
 				.expiresAt(now.plus(jwtProperties.accessTokenExpiration()))
+				.claim(SESSION_ID_CLAIM, String.valueOf(sessionId))
 				.build();
 		return jwtEncoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
 	}
