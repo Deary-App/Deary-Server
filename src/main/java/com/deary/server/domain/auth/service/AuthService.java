@@ -8,6 +8,7 @@ import com.deary.server.domain.auth.dto.request.LogoutRequest;
 import com.deary.server.domain.auth.dto.request.TokenReissueRequest;
 import com.deary.server.domain.auth.dto.response.TokenIssueResponse;
 import com.deary.server.domain.auth.dto.response.SocialLoginResponse;
+import com.deary.server.domain.push.service.PushTokenService;
 import com.deary.server.domain.user.entity.SocialAccount;
 import com.deary.server.domain.user.repository.SocialAccountRepository;
 import java.util.Optional;
@@ -24,6 +25,7 @@ public class AuthService {
 	private final SocialAccountRegistrar socialAccountRegistrar;
 	private final TokenService tokenService;
 	private final AppleTokenService appleTokenService;
+	private final PushTokenService pushTokenService;
 
 	public SocialLoginResponse handleAppleLogin(AppleLoginRequest request) {
 		SocialUserInfo userInfo = socialIdTokenVerifier.verifyApple(request.identityToken(), request.nonce());
@@ -40,8 +42,14 @@ public class AuthService {
 		return tokenService.handleReissue(request.refreshToken());
 	}
 
+	/**
+	 * 이 기기의 리프레시 토큰을 지운다. 푸시 토큰도 보냈으면 리프레시 토큰 주인의 것일 때만 함께 지운다.
+	 */
 	public void handleLogout(LogoutRequest request) {
-		tokenService.removeRefreshToken(request.refreshToken());
+		Optional<Long> userId = tokenService.removeRefreshToken(request.refreshToken());
+		if (userId.isPresent() && request.pushToken() != null && !request.pushToken().isBlank()) {
+			pushTokenService.removePushToken(userId.get(), request.pushToken());
+		}
 	}
 
 	private SocialLoginResponse login(SocialUserInfo userInfo) {
