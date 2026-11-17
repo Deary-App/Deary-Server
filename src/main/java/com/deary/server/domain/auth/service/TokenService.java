@@ -45,7 +45,7 @@ public class TokenService {
 		Long sessionId = refreshToken.getId();
 		Instant now = Instant.now();
 		if (refreshToken.isExpired(now)) {
-			refreshTokenRepository.deleteRefreshTokenById(sessionId);
+			refreshTokenRepository.deleteExpiredRefreshToken(sessionId, oldTokenHash, now);
 			throw new CustomException(AuthErrorCode.INVALID_REFRESH_TOKEN);
 		}
 		String newRawRefreshToken = refreshTokenHasher.generateRawToken();
