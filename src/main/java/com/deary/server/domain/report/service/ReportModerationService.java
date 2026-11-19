@@ -193,6 +193,36 @@ public class ReportModerationService {
 	@Transactional
 	public void registerAutoReport(ReportTargetType targetType, Long targetId, ReportReason reason, String detail) {
 		Instant now = Instant.now();
+		registerAutoReportEntity(targetType, targetId, reason, detail, ReportStatus.AUTO_HIDDEN, now);
+	}
+
+	/**
+	 * 닉네임은 숨길 수 없어서, 자동 검수에 걸리면 숨기지 않고 신고함 대기 목록에만 올린다.
+	 * 프로필 사진 때문에 이미 AI 자동 숨김 상태라면 그 상태를 유지한다.
+	 */
+	@Transactional
+	public void registerAutoNicknameReport(Long userId, ReportReason reason, String detail) {
+		Optional<User> targetUser = Optional.ofNullable(profileService.findAllProfileById(List.of(userId)).get(userId))
+				.map(Profile::getUser);
+		if (targetUser.isEmpty()) {
+			return;
+		}
+		ReportStatus status = reportRepository.findReportBySourceAndTargetTypeAndTargetId(ReportSource.AUTO,
+						ReportTargetType.USER, userId)
+				.filter(existing -> existing.getStatus() == ReportStatus.AUTO_HIDDEN)
+				.map(Report::getStatus)
+				.orElse(ReportStatus.PENDING);
+		saveAutoReport(ReportTargetType.USER, userId, targetUser.get(), reason, detail, status);
+	}
+
+	@Transactional(readOnly = true)
+	public Optional<String> findNickname(Long userId) {
+		return Optional.ofNullable(profileService.findAllProfileById(List.of(userId)).get(userId))
+				.map(Profile::getNickname);
+	}
+
+	private void registerAutoReportEntity(ReportTargetType targetType, Long targetId, ReportReason reason,
+			String detail, ReportStatus status, Instant now) {
 		Optional<User> targetUser = switch (targetType) {
 			case DIARY -> diaryRepository.findById(targetId).map(diary -> {
 				diary.hide(now);
@@ -211,14 +241,19 @@ public class ReportModerationService {
 		if (targetUser.isEmpty()) {
 			return;
 		}
+		saveAutoReport(targetType, targetId, targetUser.get(), reason, detail, status);
+	}
+
+	private void saveAutoReport(ReportTargetType targetType, Long targetId, User targetUser, ReportReason reason,
+			String detail, ReportStatus status) {
 		Report report = reportRepository.findReportBySourceAndTargetTypeAndTargetId(ReportSource.AUTO, targetType,
 						targetId)
 				.map(existing -> {
-					existing.reflag(reason, detail);
+					existing.reflag(reason, detail, status);
 					return existing;
 				})
 				.orElseGet(() -> reportRepository.save(
-						Report.createAuto(targetType, targetId, targetUser.get(), reason, detail)));
+						Report.createAuto(targetType, targetId, targetUser, reason, detail, status)));
 		reportRepository.flush();
 		eventPublisher.publishEvent(new ReportRegisteredEvent(report.getId(), targetType, targetId, reason,
 				ReportSource.AUTO, report.getUpdatedAt()));

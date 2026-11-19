@@ -81,11 +81,14 @@ public class Report extends BaseTimeEntity {
 		return new Report(reporter, targetType, targetId, targetUser, reason, detail);
 	}
 
+	/**
+	 * AI 자동 검수 신고. 숨긴 대상은 AUTO_HIDDEN, 숨기지 않고 운영자 판단만 받는 대상(닉네임)은 PENDING으로 둔다.
+	 */
 	public static Report createAuto(ReportTargetType targetType, Long targetId, User targetUser,
-			ReportReason reason, String detail) {
+			ReportReason reason, String detail, ReportStatus status) {
 		Report report = new Report(null, targetType, targetId, targetUser, reason, detail);
 		report.source = ReportSource.AUTO;
-		report.status = ReportStatus.AUTO_HIDDEN;
+		report.status = status;
 		return report;
 	}
 
@@ -96,10 +99,10 @@ public class Report extends BaseTimeEntity {
 	/**
 	 * 같은 대상이 자동 검수에 다시 걸렸다. 운영자 확인을 다시 기다린다.
 	 */
-	public void reflag(ReportReason reason, String detail) {
+	public void reflag(ReportReason reason, String detail, ReportStatus status) {
 		this.reason = reason;
 		this.detail = detail;
-		this.status = ReportStatus.AUTO_HIDDEN;
+		this.status = status;
 		this.memo = null;
 		this.handledAt = null;
 	}
