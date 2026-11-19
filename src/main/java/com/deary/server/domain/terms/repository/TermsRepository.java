@@ -10,7 +10,7 @@ public interface TermsRepository extends JpaRepository<Terms, Long> {
 	@Query("""
 			select t from Terms t
 			where t.id in (select max(latest.id) from Terms latest group by latest.type)
-			order by t.id
+			order by t.required desc, t.id
 			""")
 	List<Terms> findAllCurrentTerms();
 
