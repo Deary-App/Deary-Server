@@ -68,8 +68,9 @@ moderation:
     model: ${MODERATION_MODEL:omni-moderation-latest}
     # 이 분류에 걸리면 자동으로 숨긴다. violence·self-harm·illicit처럼 일상 글에서도 잘 걸리는 분류는 넣지 않는다
     hide-categories: ${MODERATION_HIDE_CATEGORIES:sexual,sexual/minors,harassment,harassment/threatening,hate,hate/threatening,violence/graphic,self-harm/instructions,illicit/violent}
-    # 선정성 점수(0~1)가 이 값 이상이면 OpenAI가 걸지 않았어도 숨긴다. 낮출수록 엄격하다
-    sexual-score-threshold: ${MODERATION_SEXUAL_THRESHOLD:0.3}
+    # 선정성 점수(0~1)가 이 값 이상이면 OpenAI가 걸지 않았어도 숨긴다. 낮출수록 엄격하다.
+    # 기본 0.7은 노골적인 성적 콘텐츠만 잡고, 수영복처럼 약간 노출된 사진은 통과시키는 수준이다
+    sexual-score-threshold: ${MODERATION_SEXUAL_THRESHOLD:0.7}
 
 push:
   expo:
