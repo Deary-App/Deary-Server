@@ -39,6 +39,9 @@ public class Correction extends BaseTimeEntity {
 	@Column(name = "read_at")
 	private Instant readAt;
 
+	@Column(name = "hidden_at")
+	private Instant hiddenAt;
+
 	@OneToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "request_id", nullable = false, unique = true)
 	private CorrectionRequest request;
@@ -63,6 +66,27 @@ public class Correction extends BaseTimeEntity {
 	public void addItem(DiarySentence sentence, boolean changed,
 			String correctedContent, String reason) {
 		items.add(CorrectionItem.create(this, sentence, changed, correctedContent, reason));
+	}
+
+	public boolean isHidden() {
+		return hiddenAt != null;
+	}
+
+	/**
+	 * 운영자가 숨긴 교정과 정지된 사용자의 교정은 교정한 본인에게만 보인다.
+	 */
+	public boolean isVisibleTo(Long viewerId) {
+		return corrector.getId().equals(viewerId) || (!isHidden() && !corrector.isSuspended());
+	}
+
+	public void hide(Instant now) {
+		if (hiddenAt == null) {
+			hiddenAt = now;
+		}
+	}
+
+	public void unhide() {
+		hiddenAt = null;
 	}
 
 	public void markRead(Instant now) {
