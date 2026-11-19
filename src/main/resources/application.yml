@@ -61,6 +61,16 @@ report:
 admin:
   api-key: ${ADMIN_API_KEY:}
 
+moderation:
+  openai:
+    base-url: https://api.openai.com/v1
+    api-key: ${OPENAI_API_KEY:}
+    model: ${MODERATION_MODEL:omni-moderation-latest}
+    # 이 분류에 걸리면 자동으로 숨긴다. violence·self-harm·illicit처럼 일상 글에서도 잘 걸리는 분류는 넣지 않는다
+    hide-categories: ${MODERATION_HIDE_CATEGORIES:sexual,sexual/minors,harassment,harassment/threatening,hate,hate/threatening,violence/graphic,self-harm/instructions,illicit/violent}
+    # 선정성 점수(0~1)가 이 값 이상이면 OpenAI가 걸지 않았어도 숨긴다. 낮출수록 엄격하다
+    sexual-score-threshold: ${MODERATION_SEXUAL_THRESHOLD:0.3}
+
 push:
   expo:
     enabled: ${PUSH_ENABLED:true}
