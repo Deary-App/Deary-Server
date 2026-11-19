@@ -53,8 +53,13 @@ public class Report extends BaseTimeEntity {
 	@Column(name = "memo", length = 500)
 	private String memo;
 
-	@ManyToOne(fetch = FetchType.LAZY, optional = false)
-	@JoinColumn(name = "reporter_id", nullable = false)
+	@Enumerated(EnumType.STRING)
+	@Column(name = "source", nullable = false, length = 10)
+	private ReportSource source = ReportSource.USER;
+
+	// AI 자동 검수 신고는 신고한 사람이 없다
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "reporter_id")
 	private User reporter;
 
 	@ManyToOne(fetch = FetchType.LAZY)
@@ -76,10 +81,33 @@ public class Report extends BaseTimeEntity {
 		return new Report(reporter, targetType, targetId, targetUser, reason, detail);
 	}
 
+	public static Report createAuto(ReportTargetType targetType, Long targetId, User targetUser,
+			ReportReason reason, String detail) {
+		Report report = new Report(null, targetType, targetId, targetUser, reason, detail);
+		report.source = ReportSource.AUTO;
+		report.status = ReportStatus.AUTO_HIDDEN;
+		return report;
+	}
+
+	public boolean isAuto() {
+		return source == ReportSource.AUTO;
+	}
+
+	/**
+	 * 같은 대상이 자동 검수에 다시 걸렸다. 운영자 확인을 다시 기다린다.
+	 */
+	public void reflag(ReportReason reason, String detail) {
+		this.reason = reason;
+		this.detail = detail;
+		this.status = ReportStatus.AUTO_HIDDEN;
+		this.memo = null;
+		this.handledAt = null;
+	}
+
 	public void handle(ReportStatus status, String memo, Instant now) {
 		this.status = status;
 		this.memo = memo;
-		this.handledAt = status == ReportStatus.PENDING ? null : now;
+		this.handledAt = status == ReportStatus.PENDING || status == ReportStatus.AUTO_HIDDEN ? null : now;
 	}
 
 }
