@@ -53,7 +53,7 @@ insert into terms (type, version, title, content, required, created_at, updated_
 
 운영자: Deary 운영팀
 문의처: deary1025@gmail.com
-시행일: 2026년 11월 20일$$, true, now(), now()),
+시행일: 2026년 11월 19일$$, true, now(), now()),
 ('PRIVACY', 'v4', '개인정보 수집·이용 동의', $$Deary 운영팀(이하 "운영자")은 Deary(이하 "서비스")를 운영하며 「개인정보 보호법」에 따라 회원의 개인정보를 다음과 같이 처리합니다.
 
 1. 처리하는 개인정보 항목
@@ -76,7 +76,7 @@ insert into terms (type, version, title, content, required, created_at, updated_
 5. 처리 위탁
 운영자는 서비스 운영을 위해 다음과 같이 개인정보 처리를 위탁합니다.
 - Supabase, Inc.: 데이터베이스와 사진 저장 (저장 위치: 대한민국 서울 리전)
-- onpod: 서버 운영
+- 주식회사 AI3(onpod): 서버 운영 (서버 위치: 대한민국)
 - Mixpanel, Inc.: 앱 이용 기록 분석 (9번의 선택 동의를 한 경우에만)
 - OpenAI, L.L.C.: 일기·교정·프로필 사진의 유해 콘텐츠 자동 검수 (국외 이전, 10번 참고)
 - 650 Industries, Inc.(Expo): 푸시 알림 발송 (국외 이전, 10번 참고)
@@ -124,4 +124,4 @@ insert into terms (type, version, title, content, required, created_at, updated_
 13. 동의를 거부할 권리
 동의를 거부할 수 있으나, 필수 항목에 동의하지 않으면 서비스를 이용할 수 없습니다.
 
-시행일: 2026년 11월 20일$$, true, now(), now());
+시행일: 2026년 11월 19일$$, true, now(), now());
