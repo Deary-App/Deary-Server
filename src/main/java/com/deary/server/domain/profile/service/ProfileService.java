@@ -7,6 +7,7 @@ import com.deary.server.domain.profile.dto.response.PublicProfileFindResponse;
 import com.deary.server.domain.profile.dto.response.RegistrationFindResponse;
 import com.deary.server.domain.profile.entity.Profile;
 import com.deary.server.domain.profile.event.ProfileImageChangedEvent;
+import com.deary.server.domain.profile.event.ProfileNicknameChangedEvent;
 import com.deary.server.domain.profile.exception.ProfileErrorCode;
 import com.deary.server.domain.profile.repository.ProfileRepository;
 import com.deary.server.domain.terms.service.TermsService;
@@ -61,6 +62,7 @@ public class ProfileService {
 		if (existingProfile.isEmpty()) {
 			Profile profile = profileRepository.saveAndFlush(Profile.create(user, info));
 			publishImageChanged(userId, null, profile.getProfileImagePath());
+			publishNicknameChanged(userId, null, profile.getNickname());
 			return ProfileFindResponse.of(profile, user.getEmail(), profileImageUrl(profile));
 		}
 		Profile profile = existingProfile.get();
@@ -71,15 +73,23 @@ public class ProfileService {
 			throw new CustomException(ProfileErrorCode.VERSION_CONFLICT);
 		}
 		String previousImagePath = profile.getProfileImagePath();
+		String previousNickname = profile.getNickname();
 		profile.modify(info);
 		profileRepository.flush();
 		publishImageChanged(userId, previousImagePath, profile.getProfileImagePath());
+		publishNicknameChanged(userId, previousNickname, profile.getNickname());
 		return ProfileFindResponse.of(profile, user.getEmail(), profileImageUrl(profile));
 	}
 
 	private void publishImageChanged(Long userId, String previousImagePath, String imagePath) {
 		if (imagePath != null && !imagePath.equals(previousImagePath)) {
 			eventPublisher.publishEvent(new ProfileImageChangedEvent(userId));
+		}
+	}
+
+	private void publishNicknameChanged(Long userId, String previousNickname, String nickname) {
+		if (nickname != null && !nickname.equals(previousNickname)) {
+			eventPublisher.publishEvent(new ProfileNicknameChangedEvent(userId));
 		}
 	}
 

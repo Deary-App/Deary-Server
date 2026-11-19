@@ -40,7 +40,7 @@ public class ReportWebhookClient {
 
 	public void sendReportRegistered(ReportRegisteredEvent event) {
 		String title = event.source() == ReportSource.AUTO
-				? "[Deary] AI 자동 검수가 글·사진을 숨겼습니다"
+				? "[Deary] AI 자동 검수에 걸린 항목이 있습니다"
 				: "[Deary] 새 신고가 접수됐습니다";
 		String message = """
 				%s
