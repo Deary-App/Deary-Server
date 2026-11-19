@@ -71,10 +71,10 @@ section h2 { font-size: 13px; color: var(--muted); font-weight: 600; margin: 0 0
   const KEY_STORAGE = 'deary-admin-key';
   const API = '/api/v1/admin';
   const STATUSES = [
-    ['PENDING', '대기'], ['HIDDEN', '숨김'], ['SUSPENDED', '정지'], ['DISMISSED', '문제없음']
+    ['PENDING', '대기'], ['AUTO_HIDDEN', 'AI 자동 숨김'], ['HIDDEN', '숨김'], ['SUSPENDED', '정지'], ['DISMISSED', '문제없음']
   ];
   const STATUS_LABEL = Object.fromEntries(STATUSES);
-  const STATUS_BADGE = { PENDING: 'danger', HIDDEN: 'warn', SUSPENDED: 'warn', DISMISSED: 'ok' };
+  const STATUS_BADGE = { PENDING: 'danger', AUTO_HIDDEN: 'danger', HIDDEN: 'warn', SUSPENDED: 'warn', DISMISSED: 'ok' };
   const TARGET_LABEL = { DIARY: '일기', CORRECTION: '교정', USER: '사용자' };
   const REASON_LABEL = { SPAM: '스팸', ABUSE: '욕설·괴롭힘', SEXUAL: '성적 콘텐츠', PERSONAL_INFO: '개인정보 노출', OTHER: '기타' };
   const app = document.getElementById('app');
@@ -154,14 +154,15 @@ section h2 { font-size: 13px; color: var(--muted); font-weight: 600; margin: 0 0
     try {
       const data = await request('/reports?status=' + currentStatus);
       if (!data.reports.length) {
-        list.replaceChildren(el('p', { class: 'empty' }, currentStatus === 'PENDING' ? '처리할 신고가 없어요.' : '항목이 없어요.'));
+        list.replaceChildren(el('p', { class: 'empty' }, currentStatus === 'PENDING' || currentStatus === 'AUTO_HIDDEN' ? '처리할 신고가 없어요.' : '항목이 없어요.'));
         return;
       }
       list.replaceChildren(...data.reports.map(report => el('button', { class: 'row', onclick: () => { location.hash = '#/reports/' + report.reportId; } },
         el('div', { class: 'main' },
-          el('div', { class: 'title' }, TARGET_LABEL[report.targetType] + ' #' + report.targetId),
+          el('div', { class: 'title' }, TARGET_LABEL[report.targetType] + ' #' + report.targetId,
+            report.autoFlagged && el('span', { class: 'badge warn', style: 'margin-left:6px' }, 'AI')),
           el('div', { class: 'sub' }, report.reasons.map(reason => REASON_LABEL[reason] || reason).join(', ')
-            + ' · 신고 ' + report.reportCount + '건 · ' + formatTime(report.reportedAt))),
+            + ' · ' + report.reportCount + '건 · ' + formatTime(report.reportedAt))),
         el('span', { class: 'badge ' + STATUS_BADGE[report.status] }, STATUS_LABEL[report.status]))));
     } catch (error) {
       if (error.message !== 'unauthorized') list.replaceChildren(el('p', { class: 'error' }, error.message));
@@ -230,7 +231,13 @@ section h2 { font-size: 13px; color: var(--muted); font-weight: 600; margin: 0 0
       }
     };
     const hideLabel = report.targetType === 'USER' ? '프로필 사진 내리기' : '숨기기';
-    const buttons = report.status === 'PENDING'
+    const buttons = report.status === 'AUTO_HIDDEN'
+      ? [
+        el('button', { onclick: () => act('DISMISS', '문제없음으로 처리하고 다시 공개할까요?') }, '문제없음 (다시 공개)'),
+        el('button', { class: 'danger', onclick: () => act('HIDE') }, '숨김 확정'),
+        el('button', { class: 'wide', onclick: () => act('SUSPEND', '이 사용자를 정지할까요? 앱을 쓸 수 없게 되고, 글과 교정이 다른 사람에게 보이지 않아요.') }, '작성자 정지')
+      ]
+      : report.status === 'PENDING'
       ? [
         el('button', { onclick: () => act('DISMISS') }, '문제없음'),
         el('button', { class: 'danger', onclick: () => act('HIDE') }, hideLabel),
@@ -248,7 +255,8 @@ section h2 { font-size: 13px; color: var(--muted); font-weight: 600; margin: 0 0
       el('div', { class: 'card' },
         el('section', {}, el('h2', {}, '신고 ' + report.reports.length + '건')),
         report.reports.map(entry => el('div', { class: 'item' },
-          el('div', {}, REASON_LABEL[entry.reason] || entry.reason, el('span', { class: 'sub' }, ' · ' + formatTime(entry.createdAt))),
+          el('div', {}, entry.source === 'AUTO' && el('span', { class: 'badge warn', style: 'margin-right:6px' }, 'AI'),
+            REASON_LABEL[entry.reason] || entry.reason, el('span', { class: 'sub' }, ' · ' + formatTime(entry.createdAt))),
           entry.detail && el('div', { class: 'sub content' }, entry.detail)))),
       el('div', { class: 'card' },
         el('dl', { class: 'kv' },

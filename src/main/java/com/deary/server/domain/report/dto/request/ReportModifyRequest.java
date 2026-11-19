@@ -11,7 +11,7 @@ public record ReportModifyRequest(
 ) {
 
 	public enum Action {
-		/** 문제없음: 대상은 그대로 둔다 */
+		/** 문제없음: 걸려 있던 숨김(AI 자동 숨김 포함)·정지를 풀고 그대로 둔다 */
 		DISMISS,
 		/** 숨기기: 일기·교정은 다른 사람에게서 숨기고, 사용자 신고는 프로필 사진을 내린다 */
 		HIDE,
