@@ -54,6 +54,31 @@ public class AutoModerationService {
 		}
 	}
 
+	/**
+	 * 닉네임을 검사해 걸리면 숨기지 않고 신고함 대기 목록에 올린다.
+	 */
+	public void moderateNickname(Long userId) {
+		if (!moderationClient.configured()) {
+			return;
+		}
+		try {
+			Optional<String> nickname = reportModerationService.findNickname(userId);
+			if (nickname.isEmpty() || nickname.get().isBlank()) {
+				return;
+			}
+			Map<String, Double> hits = check(new AutoModerationTarget(nickname.get(), List.of()));
+			if (hits.isEmpty()) {
+				return;
+			}
+			reportModerationService.registerAutoNicknameReport(userId, toReason(hits.keySet()),
+					cut("AI 자동 검수(닉네임 \"" + nickname.get() + "\"): " + scores(hits)));
+			log.info("자동 검수 닉네임 신고 userId={} categories={}", userId, hits.keySet());
+		} catch (RuntimeException exception) {
+			log.warn("자동 검수 실패 targetType=NICKNAME userId={} error={}", userId,
+					exception.getClass().getSimpleName());
+		}
+	}
+
 	// 숨김 분류에 걸린 분류와 가장 높은 점수. 글과 사진 중 하나라도 걸리면 숨긴다.
 	private Map<String, Double> check(AutoModerationTarget target) {
 		List<OpenAiModerationClient.Result> results = new ArrayList<>();
@@ -89,9 +114,16 @@ public class AutoModerationService {
 	}
 
 	private String detail(Map<String, Double> hits) {
-		String detail = "AI 자동 검수: " + hits.entrySet().stream()
+		return cut("AI 자동 검수: " + scores(hits));
+	}
+
+	private String scores(Map<String, Double> hits) {
+		return hits.entrySet().stream()
 				.map(entry -> "%s %.2f".formatted(entry.getKey(), entry.getValue()))
 				.collect(Collectors.joining(", "));
+	}
+
+	private String cut(String detail) {
 		return detail.length() > DETAIL_MAX_LENGTH ? detail.substring(0, DETAIL_MAX_LENGTH) : detail;
 	}
 
