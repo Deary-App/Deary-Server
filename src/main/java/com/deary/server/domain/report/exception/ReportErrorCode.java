@@ -10,7 +10,9 @@ import org.springframework.http.HttpStatus;
 public enum ReportErrorCode implements ErrorCode {
 
 	SELF_REPORT(HttpStatus.BAD_REQUEST, "REPORT_SELF", "나 자신이나 내가 쓴 글은 신고할 수 없습니다."),
-	TARGET_NOT_FOUND(HttpStatus.NOT_FOUND, "REPORT_TARGET_NOT_FOUND", "신고할 대상을 찾을 수 없습니다.");
+	TARGET_NOT_FOUND(HttpStatus.NOT_FOUND, "REPORT_TARGET_NOT_FOUND", "신고할 대상을 찾을 수 없습니다."),
+	REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "REPORT_NOT_FOUND", "신고를 찾을 수 없습니다."),
+	TARGET_GONE(HttpStatus.CONFLICT, "REPORT_TARGET_GONE", "신고 대상이 이미 삭제되어 처리할 수 없습니다.");
 
 	private final HttpStatus status;
 	private final String code;
