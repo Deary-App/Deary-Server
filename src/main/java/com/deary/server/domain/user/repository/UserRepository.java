@@ -8,6 +8,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
+	boolean existsUserByIdAndSuspendedAtIsNotNull(Long id);
+
 	@Modifying(flushAutomatically = true, clearAutomatically = true)
 	@Query("delete from User u where u.id = :id")
 	int deleteUserById(@Param("id") Long id);
