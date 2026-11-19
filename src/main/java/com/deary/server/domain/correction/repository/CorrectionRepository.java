@@ -27,6 +27,7 @@ public interface CorrectionRepository extends JpaRepository<Correction, Long> {
 	@Query("""
 			select count(c) > 0 from Correction c
 			where c.request.diary.user.id = :userId and c.readAt is null
+			and c.hiddenAt is null and c.corrector.suspendedAt is null
 			""")
 	boolean existsUnreadCorrectionByDiaryUserId(@Param("userId") Long userId);
 
@@ -44,6 +45,7 @@ public interface CorrectionRepository extends JpaRepository<Correction, Long> {
 	@Query("""
 			select c.request.diary.id as diaryId, c.readAt as readAt from Correction c
 			where c.request.diary.id in :diaryIds
+			and c.hiddenAt is null and c.corrector.suspendedAt is null
 			""")
 	List<CorrectionReadState> findAllCorrectionReadStateByDiaryIdIn(@Param("diaryIds") Collection<Long> diaryIds);
 
