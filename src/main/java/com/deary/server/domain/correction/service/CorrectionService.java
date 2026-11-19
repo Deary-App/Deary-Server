@@ -149,7 +149,7 @@ public class CorrectionService {
 		} catch (DataIntegrityViolationException | ObjectOptimisticLockingFailureException exception) {
 			throw new CustomException(CorrectionErrorCode.ALREADY_COMPLETED);
 		}
-		eventPublisher.publishEvent(new CorrectionCompletedEvent(diary.getId(), diary.getUser().getId(), userId));
+		eventPublisher.publishEvent(new CorrectionCompletedEvent(correction.getId(), diary.getId(), diary.getUser().getId(), userId));
 		Profile author = profileService.findAllProfileById(List.of(diary.getUser().getId())).get(diary.getUser().getId());
 		return new CorrectionCreateResponse(
 				correction.getId(),
