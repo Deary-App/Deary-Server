@@ -1,5 +1,6 @@
 package com.deary.server.domain.report.client;
 
+import com.deary.server.domain.report.entity.ReportSource;
 import com.deary.server.domain.report.event.ReportRegisteredEvent;
 import java.time.Duration;
 import java.time.ZoneId;
@@ -38,13 +39,17 @@ public class ReportWebhookClient {
 	}
 
 	public void sendReportRegistered(ReportRegisteredEvent event) {
+		String title = event.source() == ReportSource.AUTO
+				? "[Deary] AI 자동 검수가 글·사진을 숨겼습니다"
+				: "[Deary] 새 신고가 접수됐습니다";
 		String message = """
-				[Deary] 새 신고가 접수됐습니다
+				%s
 				- 신고 ID: %d
 				- 대상: %s #%d
 				- 사유: %s
 				- 접수 시각: %s (KST)
 				24시간 안에 검토해 주세요.""".formatted(
+				title,
 				event.reportId(),
 				event.targetType(),
 				event.targetId(),
