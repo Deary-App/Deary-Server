@@ -65,6 +65,12 @@ App Store 가이드라인 5.1.1(v)에 따라 탈퇴할 때 Sign in with Apple �
 - Controller는 `@AuthenticationPrincipal AuthUser authUser`로 받아 `authUser.userId()`를 Service에 넘긴다. 클라이언트가 보낸 사용자 ID로 소유권을 판단하지 않는다.
 - 토큰이 없거나 위조·만료·형식 오류이면 `CommonErrorCode.UNAUTHORIZED`(401) `ErrorDto`로 응답한다.
 
+## 운영자 API와 정지
+
+- `/api/v1/admin/**`는 별도 `SecurityFilterChain`에서 앱 JWT 대신 `X-Admin-Key` 헤더로 인증한다. 값은 환경변수 `ADMIN_API_KEY`와 상수 시간 비교하고, 키가 비어 있으면 모든 요청을 401로 거절한다. 키는 코드·로그·문서에 남기지 않는다.
+- 운영자 페이지 `/admin/index.html`은 정적 파일이라 인증 없이 열리지만, 데이터는 모두 운영자 API로만 받는다. 키는 운영자 브라우저의 localStorage에만 저장한다.
+- 운영자가 정지한 사용자(`users.suspended_at`)의 인증 요청은 `SuspendedUserFilter`가 403 `USER_SUSPENDED`로 거절한다. 로그인·재발급 같은 공개 경로는 막지 않는다.
+
 ## 공개 경로
 
 - 인증 없이 열려 있는 경로는 `SecurityConfig`의 `permitAll` 목록이다. 로그인처럼 공개가 필요한 API를 추가하면 이 목록에 경로를 정확히 추가한다.

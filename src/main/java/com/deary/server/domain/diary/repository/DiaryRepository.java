@@ -20,6 +20,8 @@ public interface DiaryRepository extends JpaRepository<Diary, Long> {
 			select d from Diary d
 			where (:language is null or d.language = :language)
 			and (:cursor is null or d.id < :cursor)
+			and d.hiddenAt is null
+			and d.user.suspendedAt is null
 			and not exists (
 				select b.id from UserBlock b
 				where b.blocker.id = :viewerId and b.blocked.id = d.user.id
@@ -43,6 +45,7 @@ public interface DiaryRepository extends JpaRepository<Diary, Long> {
 			select d from Diary d
 			where d.user.id = :userId
 			and (:cursor is null or d.id < :cursor)
+			and (d.user.id = :viewerId or (d.hiddenAt is null and d.user.suspendedAt is null))
 			and not exists (
 				select r.id from Report r
 				where r.reporter.id = :viewerId

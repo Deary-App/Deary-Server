@@ -104,7 +104,8 @@ public class ProfileService {
 	public PublicProfileFindResponse findPublicProfile(Long viewerId, Long userId) {
 		Profile profile = profileRepository.findById(userId)
 				.orElseThrow(() -> new CustomException(ProfileErrorCode.PROFILE_NOT_FOUND));
-		if (userBlockRepository.existsUserBlockBetween(viewerId, userId)) {
+		if (userBlockRepository.existsUserBlockBetween(viewerId, userId)
+				|| (!viewerId.equals(userId) && profile.getUser().isSuspended())) {
 			throw new CustomException(ProfileErrorCode.PROFILE_NOT_FOUND);
 		}
 		return PublicProfileFindResponse.of(profile, profileImageUrl(profile), publicAgeOf(profile.getBirthDate()));
@@ -126,7 +127,13 @@ public class ProfileService {
 		}
 	}
 
+	/**
+	 * 운영자가 내린 프로필 사진은 본인을 포함해 누구에게도 내려주지 않는다.
+	 */
 	public String profileImageUrl(Profile profile) {
+		if (profile.isProfileImageHidden()) {
+			return null;
+		}
 		return storageClient.publicUrl(storageProperties.profileBucket(), profile.getProfileImagePath());
 	}
 

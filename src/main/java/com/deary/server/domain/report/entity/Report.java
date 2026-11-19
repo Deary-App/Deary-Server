@@ -13,6 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -42,6 +43,16 @@ public class Report extends BaseTimeEntity {
 	@Column(name = "detail", length = 500)
 	private String detail;
 
+	@Enumerated(EnumType.STRING)
+	@Column(name = "status", nullable = false, length = 20)
+	private ReportStatus status = ReportStatus.PENDING;
+
+	@Column(name = "handled_at")
+	private Instant handledAt;
+
+	@Column(name = "memo", length = 500)
+	private String memo;
+
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "reporter_id", nullable = false)
 	private User reporter;
@@ -63,6 +74,12 @@ public class Report extends BaseTimeEntity {
 	public static Report create(User reporter, ReportTargetType targetType, Long targetId, User targetUser,
 			ReportReason reason, String detail) {
 		return new Report(reporter, targetType, targetId, targetUser, reason, detail);
+	}
+
+	public void handle(ReportStatus status, String memo, Instant now) {
+		this.status = status;
+		this.memo = memo;
+		this.handledAt = status == ReportStatus.PENDING ? null : now;
 	}
 
 }

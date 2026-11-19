@@ -50,6 +50,9 @@ public class ReportWebhookClient {
 				event.targetId(),
 				event.reason(),
 				TIME_FORMATTER.format(event.createdAt()));
+		if (properties.hasAdminUrl()) {
+			message += "\n처리하기: " + properties.adminUrl();
+		}
 		restClient.post()
 				.uri(properties.webhookUrl())
 				.contentType(MediaType.APPLICATION_JSON)
