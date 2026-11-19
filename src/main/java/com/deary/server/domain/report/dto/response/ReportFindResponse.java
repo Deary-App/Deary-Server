@@ -1,6 +1,7 @@
 package com.deary.server.domain.report.dto.response;
 
 import com.deary.server.domain.report.entity.ReportReason;
+import com.deary.server.domain.report.entity.ReportSource;
 import com.deary.server.domain.report.entity.ReportStatus;
 import com.deary.server.domain.report.entity.ReportTargetType;
 import java.time.Instant;
@@ -25,6 +26,7 @@ public record ReportFindResponse(
 
 	public record Entry(
 			Long reportId,
+			ReportSource source,
 			ReportReason reason,
 			String detail,
 			Instant createdAt

@@ -19,6 +19,7 @@ public record ReportFindAllResponse(
 			Long targetId,
 			List<ReportReason> reasons,
 			int reportCount,
+			boolean autoFlagged,
 			Instant reportedAt,
 			ReportStatus status
 	) {

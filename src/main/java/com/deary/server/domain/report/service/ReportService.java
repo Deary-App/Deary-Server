@@ -57,7 +57,7 @@ public class ReportService {
 			throw new CustomException(CommonErrorCode.CONFLICT);
 		}
 		eventPublisher.publishEvent(new ReportRegisteredEvent(report.getId(), report.getTargetType(),
-				report.getTargetId(), report.getReason(), report.getCreatedAt()));
+				report.getTargetId(), report.getReason(), report.getSource(), report.getCreatedAt()));
 		return new ReportCreateResponse(report.getId());
 	}
 

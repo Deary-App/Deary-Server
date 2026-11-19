@@ -13,8 +13,10 @@ import com.deary.server.domain.report.dto.response.ReportFindAllResponse;
 import com.deary.server.domain.report.dto.response.ReportFindResponse;
 import com.deary.server.domain.report.entity.Report;
 import com.deary.server.domain.report.entity.ReportReason;
+import com.deary.server.domain.report.entity.ReportSource;
 import com.deary.server.domain.report.entity.ReportStatus;
 import com.deary.server.domain.report.entity.ReportTargetType;
+import com.deary.server.domain.report.event.ReportRegisteredEvent;
 import com.deary.server.domain.report.exception.ReportErrorCode;
 import com.deary.server.domain.report.repository.ReportRepository;
 import com.deary.server.domain.user.entity.User;
@@ -29,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,6 +51,7 @@ public class ReportModerationService {
 	private final ProfileService profileService;
 	private final SupabaseStorageClient storageClient;
 	private final StorageProperties storageProperties;
+	private final ApplicationEventPublisher eventPublisher;
 
 	@Transactional(readOnly = true)
 	public ReportFindAllResponse findAllReport(ReportStatus status) {
@@ -62,7 +66,8 @@ public class ReportModerationService {
 					Report latest = group.getFirst();
 					List<ReportReason> reasons = group.stream().map(Report::getReason).distinct().toList();
 					return new ReportFindAllResponse.ReportGroup(latest.getId(), latest.getTargetType(),
-							latest.getTargetId(), reasons, group.size(), latest.getCreatedAt(), latest.getStatus());
+							latest.getTargetId(), reasons, group.size(), group.stream().anyMatch(Report::isAuto),
+							latest.getCreatedAt(), latest.getStatus());
 				})
 				.toList();
 		return new ReportFindAllResponse(items);
@@ -81,7 +86,7 @@ public class ReportModerationService {
 				report.getHandledAt(),
 				sameTarget.stream()
 						.sorted(Comparator.comparing(Report::getId).reversed())
-						.map(entry -> new ReportFindResponse.Entry(entry.getId(), entry.getReason(), entry.getDetail(),
+						.map(entry -> new ReportFindResponse.Entry(entry.getId(), entry.getSource(), entry.getReason(), entry.getDetail(),
 								entry.getCreatedAt()))
 						.toList(),
 				toTargetUser(report.getTargetUser()),
@@ -99,7 +104,11 @@ public class ReportModerationService {
 		Report report = findReportEntity(reportId);
 		Instant now = Instant.now();
 		ReportStatus nextStatus = switch (request.action()) {
-			case DISMISS -> ReportStatus.DISMISSED;
+			case DISMISS -> {
+				// 문제없음이면 자동 숨김을 포함해 걸려 있던 숨김·정지를 푼다
+				revert(report);
+				yield ReportStatus.DISMISSED;
+			}
 			case HIDE -> {
 				hideTarget(report, now);
 				yield ReportStatus.HIDDEN;
@@ -133,7 +142,7 @@ public class ReportModerationService {
 			findTargetUser(report).unsuspend();
 			return;
 		}
-		if (report.getStatus() != ReportStatus.HIDDEN) {
+		if (report.getStatus() != ReportStatus.HIDDEN && report.getStatus() != ReportStatus.AUTO_HIDDEN) {
 			return;
 		}
 		switch (report.getTargetType()) {
@@ -143,6 +152,76 @@ public class ReportModerationService {
 					.map(user -> profileService.findAllProfileById(List.of(user.getId())).get(user.getId()))
 					.ifPresent(Profile::unhideProfileImage);
 		}
+	}
+
+	/**
+	 * AI 자동 검수에 보낼 글과 사진 주소. 대상이 이미 삭제됐거나 숨겨져 있으면 비어 있다.
+	 */
+	@Transactional(readOnly = true)
+	public Optional<AutoModerationTarget> findAutoModerationTarget(ReportTargetType targetType, Long targetId) {
+		return switch (targetType) {
+			case DIARY -> diaryRepository.findById(targetId)
+					.filter(diary -> !diary.isHidden())
+					.map(diary -> {
+						List<String> paths = diary.getPhotos().stream().map(DiaryPhoto::getStoragePath).toList();
+						Map<String, String> urls = storageClient.createDownloadUrls(storageProperties.diaryBucket(), paths);
+						return new AutoModerationTarget(diary.getTitle() + "\n\n" + diary.getContent(),
+								paths.stream().map(urls::get).filter(url -> url != null).toList());
+					});
+			case CORRECTION -> correctionRepository.findById(targetId)
+					.filter(correction -> !correction.isHidden())
+					.map(correction -> {
+						StringBuilder text = new StringBuilder(correction.getComment());
+						correction.getItems().stream()
+								.filter(CorrectionItem::isChanged)
+								.forEach(item -> text.append("\n").append(item.getCorrectedContent())
+										.append(item.getReason() == null ? "" : "\n" + item.getReason()));
+						return new AutoModerationTarget(text.toString(), List.of());
+					});
+			case USER -> Optional.ofNullable(profileService.findAllProfileById(List.of(targetId)).get(targetId))
+					.filter(profile -> !profile.isProfileImageHidden())
+					.map(profile -> storageClient.publicUrl(storageProperties.profileBucket(),
+							profile.getProfileImagePath()))
+					.map(url -> new AutoModerationTarget(null, List.of(url)));
+		};
+	}
+
+	/**
+	 * AI 자동 검수에 걸린 대상을 숨기고, 운영자가 확인하도록 신고함에 올린다.
+	 * 대상마다 자동 신고는 하나만 두고, 다시 걸리면 그 신고를 다시 확인 대기로 돌린다.
+	 */
+	@Transactional
+	public void registerAutoReport(ReportTargetType targetType, Long targetId, ReportReason reason, String detail) {
+		Instant now = Instant.now();
+		Optional<User> targetUser = switch (targetType) {
+			case DIARY -> diaryRepository.findById(targetId).map(diary -> {
+				diary.hide(now);
+				return diary.getUser();
+			});
+			case CORRECTION -> correctionRepository.findById(targetId).map(correction -> {
+				correction.hide(now);
+				return correction.getCorrector();
+			});
+			case USER -> Optional.ofNullable(profileService.findAllProfileById(List.of(targetId)).get(targetId))
+					.map(profile -> {
+						profile.hideProfileImage(now);
+						return profile.getUser();
+					});
+		};
+		if (targetUser.isEmpty()) {
+			return;
+		}
+		Report report = reportRepository.findReportBySourceAndTargetTypeAndTargetId(ReportSource.AUTO, targetType,
+						targetId)
+				.map(existing -> {
+					existing.reflag(reason, detail);
+					return existing;
+				})
+				.orElseGet(() -> reportRepository.save(
+						Report.createAuto(targetType, targetId, targetUser.get(), reason, detail)));
+		reportRepository.flush();
+		eventPublisher.publishEvent(new ReportRegisteredEvent(report.getId(), targetType, targetId, reason,
+				ReportSource.AUTO, report.getUpdatedAt()));
 	}
 
 	private Report findReportEntity(Long reportId) {
@@ -216,6 +295,12 @@ public class ReportModerationService {
 				items,
 				correction.isHidden()
 		);
+	}
+
+	public record AutoModerationTarget(
+			String text,
+			List<String> imageUrls
+	) {
 	}
 
 	private String blankToNull(String value) {

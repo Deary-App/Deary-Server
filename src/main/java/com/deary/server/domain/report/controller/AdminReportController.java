@@ -37,7 +37,7 @@ public class AdminReportController {
 	@ApiResponse(responseCode = "200", description = "조회 성공")
 	@GetMapping("/reports")
 	public BaseResponse<ReportFindAllResponse> readAllReport(
-			@Parameter(description = "PENDING(기본), DISMISSED, HIDDEN, SUSPENDED")
+			@Parameter(description = "PENDING(기본), AUTO_HIDDEN(AI 자동 숨김), DISMISSED, HIDDEN, SUSPENDED")
 			@RequestParam(defaultValue = "PENDING") ReportStatus status
 	) {
 		return BaseResponse.ok("신고함 조회에 성공했습니다.", reportModerationService.findAllReport(status));
@@ -53,7 +53,8 @@ public class AdminReportController {
 	}
 
 	@Operation(summary = "신고 처리",
-			description = "DISMISS(문제없음), HIDE(일기·교정 숨김, 사용자 신고는 프로필 사진 내림), SUSPEND(작성자 정지), REOPEN(숨김·정지 해제 후 대기로)."
+			description = "DISMISS(문제없음, 걸려 있던 숨김·정지 해제), HIDE(일기·교정 숨김, 사용자 신고는 프로필 사진 내림. AI 자동 숨김은 숨김 확정),"
+					+ " SUSPEND(작성자 정지), REOPEN(숨김·정지 해제 후 대기로)."
 					+ " 같은 대상의 신고 전체에 함께 기록한다.")
 	@ApiResponse(responseCode = "200", description = "처리 성공")
 	@ApiResponse(responseCode = "400", description = "입력 오류 (COMMON_INVALID_INPUT, COMMON_INVALID_REQUEST_BODY)",

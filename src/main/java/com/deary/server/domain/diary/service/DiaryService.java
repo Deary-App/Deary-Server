@@ -13,6 +13,7 @@ import com.deary.server.domain.diary.dto.response.DiaryPhotoResponse;
 import com.deary.server.domain.diary.dto.response.DiaryTodayFindResponse;
 import com.deary.server.domain.diary.entity.Diary;
 import com.deary.server.domain.diary.entity.DiaryPhoto;
+import com.deary.server.domain.diary.event.DiaryCreatedEvent;
 import com.deary.server.domain.diary.exception.DiaryErrorCode;
 import com.deary.server.domain.diary.repository.DiaryPhotoRepository;
 import com.deary.server.domain.diary.repository.DiaryRepository;
@@ -36,6 +37,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,6 +58,7 @@ public class DiaryService {
 	private final StoragePathPolicy storagePathPolicy;
 	private final SupabaseStorageClient storageClient;
 	private final StorageProperties storageProperties;
+	private final ApplicationEventPublisher eventPublisher;
 
 	@Transactional
 	public DiaryCreateResponse generateDiary(Long userId, DiarySaveRequest request) {
@@ -81,6 +84,7 @@ public class DiaryService {
 		} catch (DataIntegrityViolationException exception) {
 			throw new CustomException(DiaryErrorCode.ALREADY_WRITTEN_TODAY);
 		}
+		eventPublisher.publishEvent(new DiaryCreatedEvent(diary.getId()));
 		String firstPhotoPath = diary.getPhotos().getFirst().getStoragePath();
 		return new DiaryCreateResponse(diary.getId(), signedUrls(List.of(firstPhotoPath)).get(firstPhotoPath));
 	}
