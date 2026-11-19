@@ -34,4 +34,4 @@ docker compose up -d
 
 ## 운영 설정
 
-`prod` 프로필은 `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`(32바이트 이상), `APPLE_CLIENT_IDS`, `GOOGLE_CLIENT_IDS`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`가 필요하고 Swagger를 끈다. 토큰 만료는 `JWT_ACCESS_TOKEN_EXPIRATION`(기본 30m), `JWT_REFRESH_TOKEN_EXPIRATION`(기본 14d)으로 바꿀 수 있다. Supabase에 연결할 때는 Supavisor Session mode 주소를 사용한다. 스키마는 Flyway로만 변경하고 Supabase 대시보드에서 직접 수정하지 않는다. Supabase의 Data API는 끈다.
+`prod` 프로필은 `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`(32바이트 이상), `APPLE_CLIENT_IDS`, `GOOGLE_CLIENT_IDS`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`가 필요하고 Swagger를 끈다. 토큰 만료는 `JWT_ACCESS_TOKEN_EXPIRATION`(기본 30m), `JWT_REFRESH_TOKEN_EXPIRATION`(기본 14d)으로 바꿀 수 있다. Supabase에 연결할 때는 Supavisor Session mode 주소를 사용한다. 스키마는 Flyway로만 변경하고 Supabase 대시보드에서 직접 수정하지 않는다. Supabase의 Data API는 끈다. 운영자 신고 처리 페이지(`/admin/index.html`)를 쓰려면 `ADMIN_API_KEY`(32자 이상 임의 문자열)를 넣고, 신고 알림에 페이지 링크를 붙이려면 `REPORT_ADMIN_URL`을 넣는다. `ADMIN_API_KEY`가 비어 있으면 운영자 API는 모두 거절된다. 일기·교정·프로필 사진 자동 검수를 켜려면 `OPENAI_API_KEY`를 넣는다. 비어 있으면 검사하지 않는다.

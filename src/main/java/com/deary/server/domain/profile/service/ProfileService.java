@@ -6,6 +6,7 @@ import com.deary.server.domain.profile.dto.response.ProfileFindResponse;
 import com.deary.server.domain.profile.dto.response.PublicProfileFindResponse;
 import com.deary.server.domain.profile.dto.response.RegistrationFindResponse;
 import com.deary.server.domain.profile.entity.Profile;
+import com.deary.server.domain.profile.event.ProfileImageChangedEvent;
 import com.deary.server.domain.profile.exception.ProfileErrorCode;
 import com.deary.server.domain.profile.repository.ProfileRepository;
 import com.deary.server.domain.terms.service.TermsService;
@@ -26,6 +27,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,6 +47,7 @@ public class ProfileService {
 	private final SupabaseStorageClient storageClient;
 	private final StorageProperties storageProperties;
 	private final UserBlockRepository userBlockRepository;
+	private final ApplicationEventPublisher eventPublisher;
 
 	@Transactional
 	public ProfileFindResponse handleProfileSave(Long userId, ProfileSaveRequest request) {
@@ -57,6 +60,7 @@ public class ProfileService {
 		Optional<Profile> existingProfile = profileRepository.findById(userId);
 		if (existingProfile.isEmpty()) {
 			Profile profile = profileRepository.saveAndFlush(Profile.create(user, info));
+			publishImageChanged(userId, null, profile.getProfileImagePath());
 			return ProfileFindResponse.of(profile, user.getEmail(), profileImageUrl(profile));
 		}
 		Profile profile = existingProfile.get();
@@ -66,9 +70,17 @@ public class ProfileService {
 		if (!request.version().equals(profile.getVersion())) {
 			throw new CustomException(ProfileErrorCode.VERSION_CONFLICT);
 		}
+		String previousImagePath = profile.getProfileImagePath();
 		profile.modify(info);
 		profileRepository.flush();
+		publishImageChanged(userId, previousImagePath, profile.getProfileImagePath());
 		return ProfileFindResponse.of(profile, user.getEmail(), profileImageUrl(profile));
+	}
+
+	private void publishImageChanged(Long userId, String previousImagePath, String imagePath) {
+		if (imagePath != null && !imagePath.equals(previousImagePath)) {
+			eventPublisher.publishEvent(new ProfileImageChangedEvent(userId));
+		}
 	}
 
 	@Transactional(readOnly = true)
@@ -104,7 +116,8 @@ public class ProfileService {
 	public PublicProfileFindResponse findPublicProfile(Long viewerId, Long userId) {
 		Profile profile = profileRepository.findById(userId)
 				.orElseThrow(() -> new CustomException(ProfileErrorCode.PROFILE_NOT_FOUND));
-		if (userBlockRepository.existsUserBlockBetween(viewerId, userId)) {
+		if (userBlockRepository.existsUserBlockBetween(viewerId, userId)
+				|| (!viewerId.equals(userId) && profile.getUser().isSuspended())) {
 			throw new CustomException(ProfileErrorCode.PROFILE_NOT_FOUND);
 		}
 		return PublicProfileFindResponse.of(profile, profileImageUrl(profile), publicAgeOf(profile.getBirthDate()));
@@ -126,7 +139,13 @@ public class ProfileService {
 		}
 	}
 
+	/**
+	 * 운영자가 내린 프로필 사진은 본인을 포함해 누구에게도 내려주지 않는다.
+	 */
 	public String profileImageUrl(Profile profile) {
+		if (profile.isProfileImageHidden()) {
+			return null;
+		}
 		return storageClient.publicUrl(storageProperties.profileBucket(), profile.getProfileImagePath());
 	}
 

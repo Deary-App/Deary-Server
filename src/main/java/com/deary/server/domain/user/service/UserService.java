@@ -26,6 +26,11 @@ public class UserService {
 				.orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
 	}
 
+	@Transactional(readOnly = true)
+	public boolean isSuspended(Long userId) {
+		return userRepository.existsUserByIdAndSuspendedAtIsNotNull(userId);
+	}
+
 	@Transactional
 	public void removeUser(Long userId) {
 		userRepository.deleteUserById(userId);

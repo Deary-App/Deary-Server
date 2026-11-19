@@ -15,6 +15,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,6 +45,9 @@ public class Diary extends BaseTimeEntity {
 
 	@Column(name = "language", nullable = false, length = 2)
 	private Language language;
+
+	@Column(name = "hidden_at")
+	private Instant hiddenAt;
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "user_id", nullable = false)
@@ -79,6 +83,27 @@ public class Diary extends BaseTimeEntity {
 
 	public boolean isWrittenBy(Long userId) {
 		return user.getId().equals(userId);
+	}
+
+	public boolean isHidden() {
+		return hiddenAt != null;
+	}
+
+	/**
+	 * 다른 사용자에게 보여도 되는지. 운영자가 숨긴 글과 정지된 사용자의 글은 작성자 본인에게만 보인다.
+	 */
+	public boolean isVisibleTo(Long viewerId) {
+		return isWrittenBy(viewerId) || (!isHidden() && !user.isSuspended());
+	}
+
+	public void hide(Instant now) {
+		if (hiddenAt == null) {
+			hiddenAt = now;
+		}
+	}
+
+	public void unhide() {
+		hiddenAt = null;
 	}
 
 }

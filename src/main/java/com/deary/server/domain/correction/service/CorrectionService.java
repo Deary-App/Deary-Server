@@ -149,7 +149,7 @@ public class CorrectionService {
 		} catch (DataIntegrityViolationException | ObjectOptimisticLockingFailureException exception) {
 			throw new CustomException(CorrectionErrorCode.ALREADY_COMPLETED);
 		}
-		eventPublisher.publishEvent(new CorrectionCompletedEvent(diary.getId(), diary.getUser().getId(), userId));
+		eventPublisher.publishEvent(new CorrectionCompletedEvent(correction.getId(), diary.getId(), diary.getUser().getId(), userId));
 		Profile author = profileService.findAllProfileById(List.of(diary.getUser().getId())).get(diary.getUser().getId());
 		return new CorrectionCreateResponse(
 				correction.getId(),
@@ -165,6 +165,7 @@ public class CorrectionService {
 			throw new CustomException(DiaryErrorCode.DIARY_NOT_FOUND);
 		}
 		Correction correction = correctionRepository.findCorrectionWithItemsByDiaryId(diaryId)
+				.filter(found -> found.isVisibleTo(userId))
 				.orElseThrow(() -> new CustomException(CorrectionErrorCode.CORRECTION_NOT_FOUND));
 		return new CorrectionFindResponse(
 				correction.getId(),
@@ -185,6 +186,7 @@ public class CorrectionService {
 	 */
 	public Optional<PublicCorrectionResponse> findPublicCorrection(Long viewerId, Long diaryId, boolean viewerIsAuthor) {
 		return correctionRepository.findCorrectionWithItemsByDiaryId(diaryId)
+				.filter(correction -> correction.isVisibleTo(viewerId))
 				.filter(correction -> correction.getReadAt() != null || viewerIsAuthor
 						|| correction.getCorrector().getId().equals(viewerId))
 				.map(correction -> new PublicCorrectionResponse(
@@ -310,7 +312,8 @@ public class CorrectionService {
 	}
 
 	private void validateVisible(Long userId, Diary diary) {
-		if (blockService.isBlockedBetween(userId, diary.getUser().getId())
+		if (!diary.isVisibleTo(userId)
+				|| blockService.isBlockedBetween(userId, diary.getUser().getId())
 				|| reportService.hasReported(userId, ReportTargetType.DIARY, diary.getId())) {
 			throw new CustomException(DiaryErrorCode.DIARY_NOT_FOUND);
 		}
@@ -322,6 +325,7 @@ public class CorrectionService {
 			throw new CustomException(DiaryErrorCode.DIARY_NOT_FOUND);
 		}
 		return correctionRepository.findCorrectionByRequestDiaryId(diaryId)
+				.filter(correction -> correction.isVisibleTo(userId))
 				.orElseThrow(() -> new CustomException(CorrectionErrorCode.CORRECTION_NOT_FOUND));
 	}
 

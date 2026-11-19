@@ -70,7 +70,8 @@ public class PublicDiaryService {
 		Diary diary = diaryRepository.findById(diaryId)
 				.orElseThrow(() -> new CustomException(DiaryErrorCode.DIARY_NOT_FOUND));
 		Long authorId = diary.getUser().getId();
-		if (blockService.isBlockedBetween(userId, authorId)
+		if (!diary.isVisibleTo(userId)
+				|| blockService.isBlockedBetween(userId, authorId)
 				|| reportService.hasReported(userId, ReportTargetType.DIARY, diaryId)) {
 			throw new CustomException(DiaryErrorCode.DIARY_NOT_FOUND);
 		}

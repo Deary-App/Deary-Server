@@ -13,7 +13,9 @@ import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Objects;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -54,6 +56,9 @@ public class Profile extends BaseTimeEntity {
 	@Column(name = "profile_image_path")
 	private String profileImagePath;
 
+	@Column(name = "profile_image_hidden_at")
+	private Instant profileImageHiddenAt;
+
 	@Version
 	@Column(name = "version", nullable = false)
 	private Long version;
@@ -76,7 +81,25 @@ public class Profile extends BaseTimeEntity {
 		apply(info);
 	}
 
+	public boolean isProfileImageHidden() {
+		return profileImageHiddenAt != null;
+	}
+
+	public void hideProfileImage(Instant now) {
+		if (profileImageHiddenAt == null) {
+			profileImageHiddenAt = now;
+		}
+	}
+
+	public void unhideProfileImage() {
+		profileImageHiddenAt = null;
+	}
+
 	private void apply(ProfileInfo info) {
+		if (!Objects.equals(this.profileImagePath, info.profileImagePath())) {
+			// 새 사진으로 바꾸면 운영자가 내린 이전 사진의 숨김은 풀린다
+			this.profileImageHiddenAt = null;
+		}
 		this.nickname = info.nickname();
 		this.birthDate = info.birthDate();
 		this.nationality = info.nationality();

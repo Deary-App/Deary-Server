@@ -1,22 +1,32 @@
 package com.deary.server.global.config;
 
+import com.deary.server.domain.user.service.UserService;
+import com.deary.server.global.security.AdminKeyAuthenticationFilter;
+import com.deary.server.global.security.AdminKeyProperties;
 import com.deary.server.global.security.AuthUserAuthenticationConverter;
 import com.deary.server.global.security.CustomAccessDeniedHandler;
 import com.deary.server.global.security.CustomAuthenticationEntryPoint;
+import com.deary.server.global.security.SecurityErrorResponder;
+import com.deary.server.global.security.SuspendedUserFilter;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
 import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 
 @Configuration
 @RequiredArgsConstructor
+@EnableConfigurationProperties(AdminKeyProperties.class)
 public class SecurityConfig {
 
 	// 로그인·재발급·로그아웃은 액세스 토큰 없이 부른다.
@@ -27,8 +37,32 @@ public class SecurityConfig {
 	private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
 	private final CustomAccessDeniedHandler customAccessDeniedHandler;
 	private final AuthUserAuthenticationConverter authUserAuthenticationConverter;
+	private final SecurityErrorResponder securityErrorResponder;
+	private final AdminKeyProperties adminKeyProperties;
+	private final UserService userService;
+
+	/**
+	 * 운영자 API는 앱 JWT 대신 운영자 키(X-Admin-Key)로만 인증한다.
+	 */
+	@Bean
+	@Order(1)
+	SecurityFilterChain adminSecurityFilterChain(HttpSecurity http) throws Exception {
+		return http
+				.securityMatcher("/api/v1/admin/**")
+				.csrf(AbstractHttpConfigurer::disable)
+				.httpBasic(AbstractHttpConfigurer::disable)
+				.formLogin(AbstractHttpConfigurer::disable)
+				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.exceptionHandling(exception -> exception
+						.authenticationEntryPoint(customAuthenticationEntryPoint)
+						.accessDeniedHandler(customAccessDeniedHandler))
+				.addFilterBefore(new AdminKeyAuthenticationFilter(adminKeyProperties), AnonymousAuthenticationFilter.class)
+				.authorizeHttpRequests(auth -> auth.anyRequest().hasRole(AdminKeyAuthenticationFilter.ROLE))
+				.build();
+	}
 
 	@Bean
+	@Order(2)
 	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		return http
 				.csrf(AbstractHttpConfigurer::disable)
@@ -43,8 +77,11 @@ public class SecurityConfig {
 						.jwt(jwt -> jwt.jwtAuthenticationConverter(authUserAuthenticationConverter))
 						.authenticationEntryPoint(customAuthenticationEntryPoint)
 						.accessDeniedHandler(customAccessDeniedHandler))
+				.addFilterAfter(new SuspendedUserFilter(userService, securityErrorResponder),
+						BearerTokenAuthenticationFilter.class)
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/actuator/health", "/swagger-ui/**", "/v3/api-docs/**", "/error").permitAll()
+						.requestMatchers(HttpMethod.GET, "/admin/**").permitAll()
 						.requestMatchers(HttpMethod.POST, PUBLIC_AUTH_PATHS).permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/v1/terms", "/api/v1/terms/*").permitAll()
 						.anyRequest().authenticated())
